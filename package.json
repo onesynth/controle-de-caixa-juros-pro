@@ -1,0 +1,75 @@
+{
+  "name": "controle-de-caixa-e-juros-pro",
+  "productName": "Controle de Caixa & Juros Pro",
+  "version": "1.0.0",
+  "description": "Controle de saldo, cofrinhos e rendimento de juros diários",
+  "author": "Regina",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "server": "node server/server.js",
+    "start": "concurrently \"npm run server\" \"npm run dev\"",
+    "app": "npm run build && electron .",
+    "dist": "npm run build && electron-builder --win nsis portable"
+  },
+  "build": {
+    "appId": "com.regina.controlecaixaepro",
+    "productName": "Controle de Caixa & Juros Pro",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**",
+      "server/**",
+      "dist/**",
+      "package.json"
+    ],
+    "win": {
+      "icon": "electron/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Controle de Caixa & Juros Pro"
+    }
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.19.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "lucide-react": "^1.34.0",
+    "png-to-ico": "^3.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.6.0",
+    "recharts": "^2.12.7",
+    "sharp": "^0.35.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^8.2.2",
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
+    "vite": "^5.4.0"
+  }
+}
