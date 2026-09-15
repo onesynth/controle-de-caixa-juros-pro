@@ -18,8 +18,13 @@
            background:#6c3ce0; color:#fff; font-size:15px; font-weight:600; cursor:pointer; }
   button:hover { filter:brightness(1.1); }
   button:disabled { background:#95a5a6; cursor:wait; }
+  button.secundario { background:transparent; color:#6c3ce0; border:2px solid #6c3ce0; margin-top:10px; }
+  button.secundario:hover { background:#f0f4ff; }
   .erro { color:#c0392b; font-size:13px; min-height:18px; margin-top:10px; }
+  .sucesso { color:#27ae60; font-size:13px; min-height:18px; margin-top:10px; }
   .logo { width:64px; height:64px; margin-bottom:10px; }
+  .offline-msg { background:#fff8e1; color:#b06d10; padding:10px; border-radius:8px;
+                 font-size:12px; margin-top:12px; display:none; }
 </style>
 </head>
 <body>
@@ -29,33 +34,60 @@
     <p class="sub" id="sub">Digite a chave de licença recebida por e-mail para ativar o aplicativo.</p>
     <input id="chave" placeholder="CCJ-XXXX-XXXX-XXXX" maxlength="19" autofocus>
     <button id="btn" onclick="ativar()">Ativar licença</button>
+    <button id="btnRetry" class="secundario" onclick="retry()" style="display:none">Tentar novamente</button>
     <div class="erro" id="erro"></div>
+    <div class="sucesso" id="sucesso"></div>
+    <div class="offline-msg" id="offline">
+      Servidor temporariamente indisponível. Você pode usar o app em modo offline.
+      <br>Conecte-se à internet em até <strong id="diasRestantes">15</strong> dias para revalidar.
+    </div>
   </div>
 <script>
   const { ipcRenderer } = require('electron')
   const $ = id => document.getElementById(id)
   const params = new URLSearchParams(location.search)
+
   if (params.get('modo') === 'bloqueado') {
     $('sub').textContent = 'Sua licença precisa ser revalidada. Conecte-se à internet e clique em Revalidar.'
     $('btn').textContent = 'Revalidar licença'
     $('chave').value = params.get('chave') || ''
     $('chave').readOnly = true
   }
+
   async function ativar() {
     $('erro').textContent = ''
+    $('sucesso').textContent = ''
+    $('offline').style.display = 'none'
     $('btn').disabled = true
     $('btn').textContent = 'Verificando...'
+    $('btnRetry').style.display = 'none'
+
     try {
       const modo = params.get('modo')
       const r = await ipcRenderer.invoke(modo === 'bloqueado' ? 'revalidar-licenca' : 'ativar-licenca', $('chave').value)
       if (r.ok) { window.close(); return }
+      if (r.offline) {
+        $('offline').style.display = 'block'
+        $('btn').disabled = false
+        $('btn').textContent = 'Abrir app'
+        $('btn').onclick = () => { window.close() }
+        return
+      }
       $('erro').textContent = r.erro || 'Não foi possível ativar. Verifique sua conexão.'
+      $('btnRetry').style.display = 'block'
     } catch (e) {
       $('erro').textContent = 'Falha de conexão com o servidor de licenças. Verifique sua internet.'
+      $('btnRetry').style.display = 'block'
     }
     $('btn').disabled = false
     $('btn').textContent = params.get('modo') === 'bloqueado' ? 'Revalidar licença' : 'Ativar licença'
   }
+
+  async function retry() {
+    $('btnRetry').style.display = 'none'
+    await ativar()
+  }
+
   $('chave').addEventListener('keydown', e => { if (e.key === 'Enter') ativar() })
 </script>
 </body>

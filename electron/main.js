@@ -160,6 +160,7 @@ ipcMain.handle('revalidar-licenca', async () => {
   try {
     const r = await verificarLicenca()
     if (r.status !== 'ok') return { erro: 'Não foi possível revalidar. Verifique sua internet e tente novamente.' }
+    if (r.offline) return { ok: true, offline: true }
     if (winAtivacao) winAtivacao.close()
     if (!win || win.isDestroyed()) criarJanela()
     return { ok: true }
@@ -170,7 +171,7 @@ ipcMain.handle('revalidar-licenca', async () => {
 
 async function garantirLicenca() {
   const r = await verificarLicenca()
-  if (r.status === 'ok') return { ok: true, versao: r.versao, downloadUrl: r.downloadUrl }
+  if (r.status === 'ok') return { ok: true, versao: r.versao, downloadUrl: r.downloadUrl, offline: r.offline }
   mostrarAtivacao(r.status === 'bloqueado' ? 'bloqueado' : 'ativar')
   return { ok: false }
 }

@@ -5,6 +5,7 @@ dist/
 .DS_Store
 Thumbs.db
 dados.json
-licencas-server/
+licencas-server/node_modules/
+licencas-server/licencas.json
 site-vendas/
 public/logo.png

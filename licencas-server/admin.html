@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin — Licenças</title>
+<style>
+  :root { --azul:#6c3ce0; --verde:#27ae60; --verm:#e05263; }
+  * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { margin:0; background:#f0f4f8; color:#2c3e50; }
+  header { background:var(--azul); color:#fff; padding:18px 28px; display:flex; justify-content:space-between; align-items:center; }
+  header h1 { margin:0; font-size:20px; }
+  header .subtitle { font-size:12px; opacity:0.8; }
+  main { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+  .login { max-width: 360px; margin: 80px auto; background:#fff; padding: 28px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+  input, button { padding: 10px 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 14px; }
+  button { background: var(--azul); color:#fff; border:none; cursor:pointer; font-weight:600; }
+  button:hover { filter: brightness(1.08); }
+  button.perigo { background: var(--verm); }
+  button.cinza { background:#888; }
+  .acoes { display:flex; gap:8px; align-items:center; margin-bottom: 16px; }
+  table { width:100%; border-collapse: collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+  th, td { padding: 10px 12px; text-align:left; border-bottom:1px solid #eee; font-size:13px; }
+  th { background:#f7fafc; }
+  .tag { padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+  .ok { background:#e8f8f0; color: var(--verde); }
+  .livre { background:#fff8e1; color:#b06d10; }
+  .bloq { background:#fdecee; color: var(--verm); }
+  .chave { font-family: Consolas, monospace; font-weight:600; }
+  .msg { margin: 12px 0; padding: 10px 14px; border-radius: 8px; display:none; }
+  .msg.ok { display:block; background:#e8f8f0; color:#1d7a4c; }
+  .msg.err { display:block; background:#fdecee; color:#b02a37; }
+  .config-box { background:#fff; border-radius:12px; padding:18px 22px; margin-bottom:18px; box-shadow:0 2px 10px rgba(0,0,0,.08); }
+  .config-box h3 { margin:0 0 12px; font-size:15px; color:#2c3e50; }
+  .config-campos { display:grid; grid-template-columns:140px 1fr; gap:8px 12px; align-items:center; }
+  .config-campos label { font-size:13px; font-weight:600; color:#555; }
+  .config-campos input { width:100%; }
+  .config-campos button { grid-column:span 2; margin-top:6px; }
+</style>
+</head>
+<body>
+<div id="login" class="login">
+  <h2 id="loginTitle">Painel de Licenças</h2>
+  <p><input id="senha" type="password" placeholder="Senha de administrador" style="width:100%"></p>
+  <button onclick="entrar()" style="width:100%">Entrar</button>
+  <div id="msgLogin" class="msg"></div>
+</div>
+
+<main id="painel" style="display:none">
+  <div class="config-box">
+    <h3>Versão do App</h3>
+    <div class="config-campos">
+      <label>Versão atual</label>
+      <input id="cfgVersao" placeholder="1.0.0">
+      <label>Link de download (.exe)</label>
+      <input id="cfgUrl" placeholder="https://...">
+      <button onclick="salvarConfig()">Salvar configuração</button>
+    </div>
+    <div id="msgConfig" class="msg"></div>
+  </div>
+
+  <div class="acoes">
+    <button onclick="gerar()">+ Gerar nova chave</button>
+    <input id="obs" placeholder="Observação (nome do cliente...)" style="flex:1">
+    <button class="cinza" onclick="carregar()">Atualizar</button>
+  </div>
+  <div id="msg" class="msg"></div>
+  <table>
+    <thead><tr><th>Chave</th><th>Status</th><th>Máquinas</th><th>Criada em</th><th>Obs</th><th>Ações</th></tr></thead>
+    <tbody id="linhas"></tbody>
+  </table>
+</main>
+
+<script>
+let SENHA = ''
+let APP_NAME = 'Licenças'
+const $ = id => document.getElementById(id)
+
+async function api(caminho, opts = {}) {
+  const r = await fetch(caminho, { ...opts, headers: { 'Content-Type': 'application/json', 'x-admin-key': SENHA, ...(opts.headers||{}) } })
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).erro || 'Erro ' + r.status)
+  return r.json()
+}
+
+async function entrar() {
+  SENHA = $('senha').value
+  try {
+    const info = await api('/admin/api/info')
+    APP_NAME = info.appName || 'Licenças'
+    document.title = `Admin — ${APP_NAME}`
+    $('loginTitle').textContent = `Painel — ${APP_NAME}`
+    $('login').style.display='none'
+    $('painel').style.display='block'
+    carregar()
+    carregarConfig()
+  } catch {
+    const m = $('msgLogin'); m.className='msg err'; m.textContent='Senha incorreta.'
+  }
+}
+
+function msg(t, ok=true) { const m=$('msg'); m.className='msg '+(ok?'ok':'err'); m.textContent=t }
+
+async function carregar() {
+  const chaves = await api('/admin/api/chaves')
+  $('linhas').innerHTML = chaves.reverse().map(c => `
+    <tr>
+      <td class="chave">${c.chave}</td>
+      <td><span class="tag ${c.bloqueada ? 'bloq' : c.maquinas > 0 ? 'ok' : 'livre'}">${c.bloqueada ? 'Bloqueada' : c.maquinas > 0 ? 'Ativa' : 'Disponível'}</span></td>
+      <td>${c.maquinas}/1</td>
+      <td>${new Date(c.criadaEm).toLocaleDateString('pt-BR')}</td>
+      <td>${c.obs || ''}</td>
+      <td>
+        <button class="cinza" onclick="resetar('${c.chave}')">Resetar máquina</button>
+        <button class="perigo" onclick="bloquear('${c.chave}')">${c.bloqueada ? 'Desbloquear' : 'Bloquear'}</button>
+      </td>
+    </tr>`).join('')
+}
+
+async function gerar() {
+  const r = await api('/admin/api/gerar', { method: 'POST', body: JSON.stringify({ obs: $('obs').value }) })
+  msg('Chave gerada: ' + r.chave + ' — copie e envie ao cliente.')
+  carregar()
+}
+async function resetar(chave) {
+  if (!confirm('Liberar a chave ' + chave + ' para uso em nova máquina?')) return
+  await api('/admin/api/resetar', { method: 'POST', body: JSON.stringify({ chave }) })
+  msg('Máquina liberada. O cliente poderá ativar novamente.')
+  carregar()
+}
+async function bloquear(chave) {
+  await api('/admin/api/bloquear', { method: 'POST', body: JSON.stringify({ chave }) })
+  carregar()
+}
+
+async function carregarConfig() {
+  try {
+    const cfg = await api('/admin/api/config')
+    $('cfgVersao').value = cfg.versao || '1.0.0'
+    $('cfgUrl').value = cfg.downloadUrl || ''
+  } catch {}
+}
+
+async function salvarConfig() {
+  try {
+    await api('/admin/api/config', {
+      method: 'POST',
+      body: JSON.stringify({ versao: $('cfgVersao').value, downloadUrl: $('cfgUrl').value })
+    })
+    const m = $('msgConfig'); m.className='msg ok'; m.textContent='Configuração salva!'
+    setTimeout(() => { m.className='msg' }, 2500)
+  } catch (e) {
+    const m = $('msgConfig'); m.className='msg err'; m.textContent='Erro: ' + e.message
+  }
+}
+$('senha').addEventListener('keydown', e => { if (e.key === 'Enter') entrar() })
+</script>
+</body>
+</html>

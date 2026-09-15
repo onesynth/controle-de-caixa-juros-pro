@@ -31,14 +31,21 @@ export function salvarLicenca(lic) {
 }
 
 async function chamar(rota, corpo) {
-  const r = await fetch(`${URL_LICENCAS}${rota}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(corpo)
-  })
-  const d = await r.json().catch(() => ({}))
-  if (!r.ok) throw new Error(d.erro || `Erro ${r.status}`)
-  return d
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 15000)
+  try {
+    const r = await fetch(`${URL_LICENCAS}${rota}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corpo),
+      signal: controller.signal
+    })
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(d.erro || `Erro ${r.status}`)
+    return d
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 export async function ativar(chave) {
@@ -48,19 +55,37 @@ export async function ativar(chave) {
   return { licenca: lic, versao: d.versao, downloadUrl: d.downloadUrl }
 }
 
-// Retorna: { status: 'ok' | 'ativar' | 'bloqueado', licenca?, versao?, downloadUrl? }
+// Retorna: { status: 'ok' | 'ativar' | 'bloqueado', licenca?, versao?, downloadUrl?, offline? }
 export async function verificarLicenca() {
   const lic = licencaSalva()
   if (!lic) return { status: 'ativar' }
+
   const dias = (Date.now() - new Date(lic.ultimaValidacao).getTime()) / 864e5
+
+  // Dentro do período de revalidação: libera direto
   if (dias < REVALIDAR_DIAS) return { status: 'ok', licenca: lic }
+
+  // Tenta revalidar com o servidor
   try {
     const d = await chamar('/validar', { token: lic.token })
     const novo = { ...lic, token: d.token, ultimaValidacao: new Date().toISOString() }
     salvarLicenca(novo)
     return { status: 'ok', licenca: novo, versao: d.versao, downloadUrl: d.downloadUrl }
   } catch (e) {
-    if (dias > TOLERANCIA_DIAS) return { status: 'bloqueado', erro: e.message, licenca: lic }
-    return { status: 'ok', licenca: lic } // dentro da tolerância, segue funcionando
+    // Servidor indisponível ou erro de rede: permite uso offline
+    if (dias <= TOLERANCIA_DIAS) {
+      return { status: 'ok', licenca: lic, offline: true }
+    }
+    // Passou da tolerância: bloqueia
+    return { status: 'bloqueado', erro: e.message, licenca: lic }
   }
+}
+
+// Verificação silenciosa para uso offline (sem bloquear o app)
+export function verificarLicencaLocal() {
+  const lic = licencaSalva()
+  if (!lic) return { status: 'ativar' }
+  const dias = (Date.now() - new Date(lic.ultimaValidacao).getTime()) / 864e5
+  if (dias <= TOLERANCIA_DIAS) return { status: 'ok', licenca: lic }
+  return { status: 'expirado', licenca: lic, dias: Math.floor(dias) }
 }
