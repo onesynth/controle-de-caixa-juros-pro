@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual do Cliente — Controle de Caixa & Juros Pro</title>
+<style>
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #1e1b2e;
+    background: #fff;
+    line-height: 1.65;
+    font-size: 13.5px;
+  }
+
+  /* ===== CAPA ===== */
+  .capa {
+    width: 210mm;
+    height: 297mm;
+    background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+  .capa::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 60%, rgba(255,255,255,0.05) 0%, transparent 40%);
+  }
+  .capa-logo {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 1;
+  }
+  .capa-logo svg { width: 100%; height: 100%; }
+  .capa h1 {
+    font-size: 36px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    position: relative;
+    z-index: 1;
+  }
+  .capa .subtitulo {
+    font-size: 18px;
+    opacity: 0.92;
+    max-width: 440px;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 1;
+  }
+  .capa-versao {
+    position: relative;
+    z-index: 1;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    padding: 10px 28px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .capa-footer {
+    position: absolute;
+    bottom: 40px;
+    font-size: 12px;
+    opacity: 0.7;
+    z-index: 1;
+  }
+
+  /* ===== SUMÁRIO ===== */
+  .sumario {
+    page-break-after: always;
+    padding: 50px 60px;
+  }
+  .sumario h2 {
+    font-size: 26px;
+    color: #7c3aed;
+    margin-bottom: 30px;
+    padding-bottom: 12px;
+    border-bottom: 3px solid #7c3aed;
+  }
+  .sumario-item {
+    display: flex;
+    align-items: baseline;
+    padding: 10px 0;
+    border-bottom: 1px dotted #ddd;
+  }
+  .sumario-num {
+    font-weight: 700;
+    color: #7c3aed;
+    min-width: 32px;
+    font-size: 15px;
+  }
+  .sumario-texto {
+    font-size: 15px;
+    color: #1e1b2e;
+  }
+
+  /* ===== CONTEÚDO GERAL ===== */
+  .pagina {
+    page-break-after: always;
+    padding: 50px 60px;
+    min-height: 297mm;
+  }
+  .pagina:last-child { page-break-after: avoid; }
+
+  .secao-titulo {
+    font-size: 24px;
+    color: #7c3aed;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .secao-titulo .num {
+    background: #7c3aed;
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .secao-sub {
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  h3 {
+    font-size: 17px;
+    color: #1e1b2e;
+    margin: 24px 0 10px;
+  }
+  h4 {
+    font-size: 14.5px;
+    color: #374151;
+    margin: 18px 0 8px;
+  }
+
+  p { margin-bottom: 10px; }
+
+  ul, ol {
+    margin: 8px 0 14px 22px;
+  }
+  li { margin-bottom: 6px; }
+
+  .destaque {
+    background: #f5f3ff;
+    border-left: 4px solid #7c3aed;
+    padding: 16px 20px;
+    border-radius: 0 10px 10px 0;
+    margin: 16px 0;
+    font-size: 13.5px;
+  }
+  .destaque strong { color: #7c3aed; }
+
+  .aviso {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 14px 18px;
+    border-radius: 0 10px 10px 0;
+    margin: 14px 0;
+    font-size: 13px;
+  }
+
+  .dica {
+    background: #ecfdf5;
+    border-left: 4px solid #10b981;
+    padding: 14px 18px;
+    border-radius: 0 10px 10px 0;
+    margin: 14px 0;
+    font-size: 13px;
+  }
+
+  code {
+    background: #f1f5f9;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12.5px;
+    color: #7c3aed;
+  }
+
+  .passo {
+    display: flex;
+    gap: 14px;
+    margin: 12px 0;
+    align-items: flex-start;
+  }
+  .passo-num {
+    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .passo-texto { flex: 1; }
+
+  /* ===== GUIA 7 DIAS ===== */
+  .dia-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 14px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    page-break-inside: avoid;
+  }
+  .dia-card .dia-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .dia-badge {
+    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    color: #fff;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .dia-titulo {
+    font-weight: 700;
+    font-size: 15px;
+    color: #1e1b2e;
+  }
+  .dia-card ul { margin-left: 18px; }
+  .dia-card li { margin-bottom: 4px; font-size: 13px; }
+
+  /* ===== TABELA ===== */
+  .tabela {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 13px;
+  }
+  .tabela th {
+    background: #7c3aed;
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+  }
+  .tabela td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .tabela tr:nth-child(even) { background: #f9fafb; }
+
+  /* ===== FUNCIONALIDADE CARD ===== */
+  .func-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 14px 0;
+  }
+  .func-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px;
+    page-break-inside: avoid;
+  }
+  .func-card h4 {
+    margin: 0 0 6px;
+    color: #7c3aed;
+    font-size: 14px;
+  }
+  .func-card p {
+    margin: 0;
+    font-size: 12.5px;
+    color: #4b5563;
+  }
+
+  /* ===== RODAPÉ ===== */
+  .rodape-pagina {
+    position: fixed;
+    bottom: 20px;
+    left: 60px;
+    right: 60px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #9ca3af;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 8px;
+  }
+
+  /* ===== SUPORTE ===== */
+  .suporte-box {
+    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    color: #fff;
+    border-radius: 14px;
+    padding: 28px;
+    margin: 20px 0;
+    text-align: center;
+  }
+  .suporte-box h3 { color: #fff; margin-bottom: 14px; font-size: 18px; }
+  .suporte-box p { opacity: 0.95; font-size: 14px; }
+  .suporte-email {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 12px;
+    text-decoration: none;
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== CAPA ==================== -->
+<div class="capa">
+  <div class="capa-logo">
+    <svg viewBox="0 0 256 256">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#fff" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#fff" stop-opacity="0.7"/>
+        </linearGradient>
+      </defs>
+      <rect width="256" height="256" rx="56" fill="url(#g)" fill-opacity="0.15"/>
+      <circle cx="128" cy="128" r="72" fill="none" stroke="#fff" stroke-width="14" stroke-opacity="0.9"/>
+      <text x="128" y="148" text-anchor="middle" font-size="72" font-weight="700" fill="#fff" font-family="sans-serif">%</text>
+    </svg>
+  </div>
+  <h1>Controle de Caixa & Juros Pro</h1>
+  <p class="subtitulo">Manual do Cliente — Instalação, ativação e uso completo</p>
+  <div class="capa-versao">Versão 1.1.0</div>
+  <p class="capa-footer">Controle de Caixa & Juros Pro © 2026 — Todos os direitos reservados</p>
+</div>
+
+<!-- ==================== SUMÁRIO ==================== -->
+<div class="sumario">
+  <h2>Sumário</h2>
+  <div class="sumario-item"><span class="sumario-num">01</span><span class="sumario-texto">Bem-vindo ao Controle de Caixa & Juros Pro</span></div>
+  <div class="sumario-item"><span class="sumario-num">02</span><span class="sumario-texto">Requisitos do Sistema</span></div>
+  <div class="sumario-item"><span class="sumario-num">03</span><span class="sumario-texto">Instalação</span></div>
+  <div class="sumario-item"><span class="sumario-num">04</span><span class="sumario-texto">Ativação da Licença</span></div>
+  <div class="sumario-item"><span class="sumario-num">05</span><span class="sumario-texto">Guia Rápido: Seus Primeiros 7 Dias</span></div>
+  <div class="sumario-item"><span class="sumario-num">06</span><span class="sumario-texto">Conhecendo as Funcionalidades</span></div>
+  <div class="sumario-item"><span class="sumario-num">07</span><span class="sumario-texto">Configurações e Personalização</span></div>
+  <div class="sumario-item"><span class="sumario-num">08</span><span class="sumario-texto">Backup e Segurança dos Dados</span></div>
+  <div class="sumario-item"><span class="sumario-num">09</span><span class="sumario-texto">Solução de Problemas</span></div>
+  <div class="sumario-item"><span class="sumario-num">10</span><span class="sumario-texto">Suporte e Garantia</span></div>
+</div>
+
+<!-- ==================== 01. BEM-VINDO ==================== -->
+<div class="pagina">
+  <div class="secao-titulo"><span class="num">01</span> Bem-vindo</div>
+  <div class="secao-sub">Obrigada por adquirir o Controle de Caixa & Juros Pro!</div>
+
+  <p>Você agora tem acceso a um programa completo de controle financeiro que calcula <strong>juros retroativos automaticamente</strong>, gerencia cofrinhos com prazo e gera relatórios profissionais — tudo direto no seu PC Windows, com privacidade total.</p>
+
+  <div class="destaque">
+    <strong>O que você pode fazer com o app:</strong>
+    <ul style="margin-top:8px">
+      <li>Calcular juros de cada mês automaticamente com base nas movimentações</li>
+      <li>Criar e gerenciar cofrinhos com prazo e metas de economia</li>
+      <li>Acompanhar saldos, rendimentos e histórico financeiro</li>
+      <li>Gerar relatórios anuais profissionais em PDF e CSV</li>
+      <li>Manter seus dados 100% privados — nada vai para a nuvem</li>
+    </ul>
+  </div>
+
+  <h3>Como funciona o cálculo de juros</h3>
+  <p>O app utiliza a seguinte fórmula para calcular juros retroativos:</p>
+  <div class="destaque" style="text-align:center; font-size:16px; font-family: 'Consolas', monospace; color:#7c3aed;">
+    Juros = Novo Saldo − Saldo Anterior − Entradas + Saídas
+  </div>
+  <p>Isso significa que você descobre exatamente quanto seu dinheiro renderia — sem planilha, sem conta manual.</p>
+
+  <h3>Sua licença</h3>
+  <ul>
+    <li><strong>Tipo:</strong> Licença vitalícia — pagamento único, sem mensalidade</li>
+    <li><strong>Computadores:</strong> 1 computador por licença (troca de PC disponível via suporte)</li>
+    <li><strong>Atualizações:</strong> Gratuitas para sempre</li>
+    <li><strong>Garantia:</strong> 7 dias — se não gostar, devolvemos 100% do valor</li>
+  </ul>
+</div>
+
+<!-- ==================== 02. REQUISITOS ==================== -->
+<div class="pagina">
+  <div class="secao-titulo"><span class="num">02</span> Requisitos do Sistema</div>
+  <div class="secao-sub">Verifique se seu computador atende aos requisitos mínimos.</div>
+
+  <table class="tabela">
+    <thead>
+      <tr><th>Componente</th><th>Mínimo</th><th>Recomendado</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Sistema Operacional</td><td>Windows 10 (64 bits)</td><td>Windows 11</td></tr>
+      <tr><td>Memória RAM</td><td>4 GB</td><td>8 GB</td></tr>
+      <tr><td>Espaço em Disco</td><td>200 MB livres</td><td>500 MB livres</td></tr>
+      <tr><td>Resolução</td><td>1280 x 720</td><td>1920 x 1080</td></tr>
+      <tr><td>Internet</td><td>Necessária apenas para ativação</td><td>Conexão estável</td></tr>
+    </tbody>
+  </table>
+
+  <div class="dica">
+    <strong>Dica:</strong> Após a ativação inicial, o app funciona completamente offline. Seus dados ficam salvos apenas no seu computador.
+  </div>
+</div>
+
+<!-- ==================== 03. INSTALAÇÃO ==================== -->
+<div class="pagina">
+  <div class="secao-titulo"><span class="num">03</span> Instalação</div>
+  <div class="secao-sub">Escolha uma das duas versões disponíveis para download.</div>
+
+  <h3>Opção 1 — Versão Setup (recomendada)</h3>
+  <p>O instalador configura tudo automaticamente no seu computador.</p>
+
+  <div class="passo">
+    <span class="passo-num">1</span>
+    <span class="passo-texto">Acesse o link de download enviado por e-mail após a compra</span>
+  </div>
+  <div class="passo">
+    <span class="passo-num">2</span>
+    <span class="passo-texto">Clique em <strong>Baixar Versão Setup</strong> e aguarde o download do arquivo <code>.exe</code></span>
+  </div>
+  <div class="passo">
+    <span class="passo-num">3</span>
+    <span class="passo-texto">Execute o arquivo baixado e siga o assistente de instalação: <strong>Próximo → Próximo → Instalar</strong></span>
+  </div>
+  <div class="passo">
+    <span class="passo-num">4</span>
+    <span class="passo-texto">Marque a opção para criar atalho na área de trabalho (recomendado)</span>
+  </div>
+  <div class="passo">
+    <span class="passo-num">5</span>
+    <span class="passo-texto">Clique em <strong>Instalar</strong> e aguarde a conclusão</span>
+  </div>
+  <div class="passo">
+    <span class="passo-num">6</span>
+    <span class="passo-texto">Abra o programa pelo atalho na área de trabalho ou menu iniciar</span>
+  </div>
+
+  <h3>Opção 2 — Versão Portátil (sem instalação)</h3>
+  <p>Ideal se você não quer instalar nada no computador ou usa PC de terceiros.</p>
+
+  <div class="passo">
+    <span class="passo-num">1</span>
+    <span class="passo-texto">Acesse o link de download enviado por e-mail</span>
+  </div>
+  <div class="passo">
+    <span class="passo-num">2</span>
+    <span class="passo-texto">Clique em <strong>Baixar Versão Portátil</strong></span>
+  </div>
+  <div class="passo">
+    <span class="passo-num">3</span>
+    <span class="passo-texto">Execute o arquivo <code>.exe</code> diretamente — não precisa instalar nada</span>
+  </div>
+
+  <div class="aviso">
+    <strong>Atenção:</strong> Na versão portátil, seus dados serão salvos na mesma pasta do executável. Se mover o arquivo, os dados vão junto.
+  </div>
+</div>
+
+<!-- ==================== 04. ATIVAÇÃO ==================== -->
+<div class="pagina">
+  <div class="secao-titulo"><span class="num">04</span> Ativação da Licença</div>
+  <div class="secao-sub">Como ativar seu aplicativo pela primeira vez.</div>
+
+  <p>Na primeira abertura do programa, você verá uma tela de ativação solicitando a chave de licença.</p>
+
+  <h3>Passo a passo</h3>
+
+  <div class="passo">
+    <span class="passo-num">1</span>
+    <span class="passo-texto">Abra o <strong>Controle de Caixa & Juros Pro</strong> pelo atalho na área de trabalho</span>
+  </div>
+  <div class="passo">
+    <span class="passo-num">2</span>
+    <span class="passo-texto">Na tela de ativação, digite a chave recebida por e-mail no formato <code>CCJ-XXXX-XXXX-XXXX</code></span>
+  </div>
+  <div class="passo">
+    <span class="passo-num">3</span>
+    <span class="passo-texto">Clique em <strong>Ativar licença</strong> e aguarde a validação</span>
+  </div>
+  <div class="passo">
+    <span class="passo-num">4</span>
+    <span class="passo-texto">Pronto! O app será desbloqueado e você terá acesso a todas as funcionalidades</span>
+  </div>
+
+  <div class="aviso">
+    <strong>Importante:</strong> Cada chave é válida para <strong>1 computador</strong>. Se precisar trocar de PC, entre em contato com o suporte para transferir sua licença gratuitamente.
+  </div>
+
+  <h3>Encontrou problemas?</h3>
+
+  <h4>Chave não encontrada</h4>
+  <p>Verifique sua caixa de entrada e a pasta de spam. O e-mail com a chave é enviado automaticamente após a confirmação do pagamento pela Kiwify.</p>
+
+  <h4>Servidor indisponível</h4>
+  <p>Se o servidor de licenças estiver temporariamente offline, o app entrará em <strong>modo offline</strong>. Você poderá usar normalmente por até <strong>15 dias</strong>. Conecte-se à internet nesse período para revalidar automaticamente.</p>
+
+  <h4>Revalidação</h4>
+  <p>Se sua licença precisar ser revalidada, basta conectar à internet e clicar em <strong>Tentar novamente</strong> na tela de ativação.</p>
+</div>
+
+<!-- ==================== 05. GUIA 7 DIAS ==================== -->
+<div class="pagina">
+  <div class="secao-titulo"><span class="num">05</span> Guia Rápido: Seus Primeiros 7 Dias</div>
+  <div class="secao-sub">Siga este roteiro para aproveitar ao máximo o app na primeira semana.</div>
+
+  <div class="dia-card">
+    <div class="dia-header">
+      <span class="dia-badge">Dia 1</span>
+      <span class="dia-titulo">Cadastre suas contas financeiras</span>
+    </div>
+    <ul>
+      <li>Abra o app e vá em <strong>Configurações</strong></li>
+      <li>Clique em <strong>Adicionar Conta</strong></li>
+      <li>Crie contas para cada fonte de dinheiro: banco, carteira, poupança, investimentos</li>
+      <li>Insira o saldo atual de cada conta</li>
+    </ul>
+    <div class="dica">Exemplo: "Nubank — R$ 5.000,00", "Carteira — R$ 200,00"</div>
+  </div>
+
+  <div class="dia-card">
+    <div class="dia-header">
+      <span class="dia-badge">Dia 2</span>
+      <span class="dia-titulo">Atualize o saldo real</span>
+    </div>
+    <ul>
+      <li>Vá para o <strong>Dashboard</strong></li>
+      <li>Selecione a conta que deseja atualizar</li>
+      <li>Digite o novo saldo e clique em <strong>Atualizar</strong></li>
+      <li>O app calculará automaticamente os juros retroativos</li>
+    </ul>
+  </div>
+
+  <div class="dia-card">
+    <div class="dia-header">
+      <span class="dia-badge">Dia 3</span>
+      <span class="dia-titulo">Crie seu primeiro cofrinho</span>
+    </div>
+    <ul>
+      <li>Vá em <strong>Cofrinhos</strong> e clique em <strong>Novo Cofrinho</strong></li>
+      <li>Defina um nome (ex: "Reserva de Emergência")</li>
+      <li>Insira o valor e selecione a conta de origem</li>
+      <li>Defina uma data de vencimento (opcional)</li>
+    </ul>
+    <div class="dica">Cofrinhos com prazo mostram barras de progresso por cor: verde (>60 dias), amarelo (>30), laranja (>7), vermelho (≤7).</div>
+  </div>
+
+  <div class="dia-card">
+    <div class="dia-header">
+      <span class="dia-badge">Dia 4</span>
+      <span class="dia-titulo">Explore o Dashboard</span>
+    </div>
+    <ul>
+      <li>Veja os cards de resumo: total em cofrinhos, caixa livre e juros</li>
+      <li>Verifique cofrinhos próximos do vencimento (alertas automáticos)</li>
+      <li>Navegue pelo histórico de últimas atualizações</li>
+      <li>Altere entre tema claro e escuro pelo botão no canto superior</li>
+    </ul>
+  </div>
+
+  <div class="dia-card">
+    <div class="dia-header">
+      <span class="dia-badge">Dia 5</span>
+      <span class="dia-titulo">Registre movimentações</span>
+    </div>
+    <ul>
+      <li>A cada atualização de saldo, o app registra uma movimentação</li>
+      <li>Vá em <strong>Histórico</strong> para ver todos os registros</li>
+      <li>Use as setas para navegar entre meses</li>
+      <li>Veja o gráfico de barras com juros por dia</li>
+    </ul>
+  </div>
+
+  <div class="dia-card">
+    <div class="dia-header">
+      <span class="dia-badge">Dia 6</span>
+      <span class="dia-titulo">Configure o CDI e gere um relatório</span>
+    </div>
+    <ul>
+      <li>Vá em <strong>Configurações</strong> e ajuste a <strong>Taxa CDI Atual</strong></li>
+      <li>Defina o <strong>Percentual do CDI</strong> (ex: 114%)</li>
+      <li>Vá em <strong>Relatórios</strong> e selecione o ano</li>
+      <li>Clique em <strong>Exportar PDF</strong> para gerar seu primeiro relatório profissional</li>
+    </ul>
+  </div>
+
+  <div class="dia-card">
+    <div class="dia-header">
+      <span class="dia-badge">Dia 7</span>
+      <span class="dia-titulo">Domine o app</span>
+    </div>
+    <ul>
+      <li>Exporte um relatório em <strong>CSV</strong> para abrir no Excel</li>
+      <li>Revise todos os cofrinhos e ajuste prazos conforme necessário</li>
+      <li>Use o app no dia a dia — atualize o saldo sempre que houver movimentação</li>
+      <li>Acompanhe o rendimento mensal nos relatórios</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== 06. FUNCIONALIDADES ==================== -->
+<div class="pagina">
+  <div class="secao-titulo"><span class="num">06</span> Conhecendo as Funcionalidades</div>
+  <div class="secao-sub">Visão completa de cada seção do aplicativo.</div>
+
+  <h3>Dashboard</h3>
+  <p>A tela principal oferece uma visão geral das suas finanças:</p>
+  <div class="func-grid">
+    <div class="func-card">
+      <h4>Total em Cofrinhos</h4>
+      <p>Soma de todos os cofrinhos cadastrados e quantos existem.</p>
+    </div>
+    <div class="func-card">
+      <h4>Caixa Livre</h4>
+      <p>Saldo disponível para gastar (saldo da conta menos cofrinhos).</p>
+    </div>
+    <div class="func-card">
+      <h4>Juros</h4>
+      <p>Juros do último registro e acumulado total no período.</p>
+    </div>
+    <div class="func-card">
+      <h4>Alertas de Vencimento</h4>
+      <p>Cofrinhos que vencem em até 30 dias aparecem com aviso.</p>
+    </div>
+  </div>
+
+  <h3>Cofrinhos</h3>
+  <p>Gerencie suas metas de economia com prazos e progresso visual:</p>
+  <ul>
+    <li><strong>Novo Cofrinho:</strong> Crie com nome, valor, conta de origem e data de vencimento</li>
+    <li><strong>Barras de Progresso:</strong> Cores indicam urgência do prazo</li>
+    <li><strong>Edição e Exclusão:</strong> Altere ou remova cofrinhos a qualquer momento</li>
+    <li><strong>Total Consolidado:</strong> Veja a soma de todos os cofrinhos no rodapé</li>
+  </ul>
+
+  <h3>Histórico</h3>
+  <p>Acompanhe todas as movimentações e o cálculo de juros:</p>
+  <ul>
+    <li><strong>Gráfico de Barras:</strong> Visualize juros por dia no mês</li>
+    <li><strong>Navegação Mensal:</strong> Use as setas para alternar entre meses</li>
+    <li><strong>Resumo:</strong> Juros do mês, juros do ano e total de registros</li>
+    <li><strong>Detalhes:</strong> Saldo anterior → Saldo atual → Juros calculado</li>
+  </ul>
+
+  <h3>Relatórios</h3>
+  <p>Gere relatórios profissionais anuais:</p>
+  <ul>
+    <li><strong>Gráfico Anual:</strong> Juros mês a mês com cores por performance</li>
+    <li><strong>Tabela Detalhada:</strong> Mês, juros, registros e status (Lucro/Perda)</li>
+    <li><strong>Resumo:</strong> Total anual, média mensal e melhor mês</li>
+    <li><strong>Exportação:</strong> PDF profissional ou CSV para planilhas</li>
+  </ul>
+</div>
+
+<!-- ==================== 07. CONFIGURAÇÕES ==================== -->
+<div class="pagina">
+  <div class="secao-titulo"><span class="num">07</span> Configurações e Personalização</div>
+  <div class="secao-sub">Ajuste o app conforme suas necessidades.</div>
+
+  <h3>Taxa CDI</h3>
+  <p>Configure a taxa vigente para cálculos de rendimento:</p>
+  <ul>
+    <li><strong>Taxa CDI Atual (% ao ano):</strong> Informe a taxa CDI vigente (ex: 14,15%)</li>
+    <li><strong>Percentual do CDI (%):</strong> Defina o percentual aplicado (ex: 114% do CDI)</li>
+  </ul>
+  <p>Clique em <strong>Salvar Configurações</strong> para aplicar.</p>
+
+  <h3>Gerenciamento de Contas</h3>
+  <table class="tabela">
+    <thead>
+      <tr><th>Ação</th><th>Como fazer</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Adicionar conta</td><td>Configurações → Adicionar Conta → Preencher nome e saldo</td></tr>
+      <tr><td>Editar conta</td><td>Clique no ícone de lápis ao lado da conta</td></tr>
+      <tr><td>Excluir conta</td><td>Clique no ícone de lixeira → Confirmar exclusão</td></tr>
+    </tbody>
+  </table>
+
+  <div class="aviso">
+    <strong>Atenção:</strong> Excluir uma conta também remove todos os cofrinhos vinculados a ela. Esta ação não pode ser desfeita.
+  </div>
+
+  <h3>Temas</h3>
+  <p>O app oferece dois temas visuais:</p>
+  <ul>
+    <li><strong>Tema Escuro (padrão):</strong> Fundo escuro, ideal para uso noturno</li>
+    <li><strong>Tema Claro:</strong> Fundo branco, ideal para uso diurno</li>
+  </ul>
+  <p>Alterne entre os temas pelo botão de sol/lua no canto superior direito.</p>
+</div>
+
+<!-- ==================== 08. BACKUP ==================== -->
+<div class="pagina">
+  <div class="secao-titulo"><span class="num">08</span> Backup e Segurança dos Dados</div>
+  <div class="secao-sub">Proteja seu histórico financeiro.</div>
+
+  <h3>Onde seus dados ficam salvos</h3>
+  <p>Seus dados são armazenados <strong>apenas no seu computador</strong>. Nada é enviado para servidores externos. Isso garante sua privacidade total.</p>
+
+  <h3>Como funciona o backup</h3>
+  <p>Os dados ficam salvos em formato JSON local. Para proteger seu histórico:</p>
+  <ul>
+    <li>Faça cópias periódicas da pasta de dados do app</li>
+    <li>Salve em um pendrive, disco externo ou nuvem pessoal</li>
+    <li>Ao reinstalar o app, restaure o arquivo de backup</li>
+  </ul>
+
+  <h3>Modo Offline</h3>
+  <p>O app funciona sem internet após a ativação. O token de validade dura <strong>15 dias</strong>, com revalidação automática a cada 7 dias quando conectado. Se ficar offline por mais de 15 dias, basta conectar à internet para revalidar.</p>
+
+  <div class="dica">
+    <strong>Dica:</strong> Conecte-se à internet pelo menos uma vez por mês para manter a licença sempre validada automaticamente.
+  </div>
+</div>
+
+<!-- ==================== 09. SOLUÇÃO DE PROBLEMAS ==================== -->
+<div class="pagina">
+  <div class="secao-titulo"><span class="num">09</span> Solução de Problemas</div>
+  <div class="secao-sub">Dúvidas frequentes e como resolvê-las.</div>
+
+  <h3>Perguntas Frequentes</h3>
+
+  <h4>O app não abre ou trava na inicialização</h4>
+  <ul>
+    <li>Verifique se o Windows está atualizado</li>
+    <li>Execute como administrador (clique com o botão direito → Executar como administrador)</li>
+    <li>Desative temporariamente o antivírus e teste novamente</li>
+  </ul>
+
+  <h4>Erro na ativação da chave</h4>
+  <ul>
+    <li>Verifique se a chave está no formato correto: <code>CCJ-XXXX-XXXX-XXXX</code></li>
+    <li>Certifique-se de estar conectado à internet</li>
+    <li>Se o servidor estiver indisponível, o app entrará em modo offline automaticamente</li>
+  </ul>
+
+  <h4>Os valores dos juros estão incorretos</h4>
+  <ul>
+    <li>Verifique se o saldo anterior foi inserido corretamente</li>
+    <li>Confirme se as movimentações (entradas e saídas) estão registradas</li>
+    <li>A fórmula utilizada é: Juros = Novo Saldo − Saldo Anterior − Entradas + Saídas</li>
+  </ul>
+
+  <h4>Perdi meus dados ao reinstalar o Windows</h4>
+  <ul>
+    <li>Se você fez backup da pasta de dados, restaure o arquivo JSON</li>
+    <li>Sem backup, os dados não podem ser recuperados (não são armazenados em nuvem)</li>
+  </ul>
+
+  <h4>Quero transferir minha licença para outro PC</h4>
+  <ul>
+    <li>Entre em contato com o suporte informando seu e-mail de compra</li>
+    <li>Sua licença será liberada do computador antigo e ativada no novo</li>
+    <li>Este serviço é gratuito</li>
+  </ul>
+</div>
+
+<!-- ==================== 10. SUPORTE ==================== -->
+<div class="pagina">
+  <div class="secao-titulo"><span class="num">10</span> Suporte e Garantia</div>
+  <div class="secao-sub">Estamos aqui para ajudar.</div>
+
+  <div class="suporte-box">
+    <h3>Precisa de ajuda?</h3>
+    <p>Entre em contato com nosso suporte técnico</p>
+    <div class="suporte-email">onesynth360@gmail.com</div>
+    <p style="margin-top:14px; font-size:13px;">Tempo de resposta: até 24 horas em dias úteis</p>
+  </div>
+
+  <h3>O que o suporte cobre</h3>
+  <ul>
+    <li>Ajuda na instalação e ativação do aplicativo</li>
+    <li>Transferência de licença para novo computador</li>
+    <li>Dúvidas de uso das funcionalidades</li>
+    <li>Solução de erros técnicos</li>
+  </ul>
+
+  <h3>Garantia</h3>
+  <p>Você tem <strong>7 dias de garantia incondicional</strong> a partir da compra. Se não gostar do produto, solicite o reembolso pela Kiwify e devolvemos 100% do valor, sem perguntas.</p>
+
+  <h3>Atualizações</h3>
+  <p>Todas as atualizações futuras são <strong>gratuitas e vitalícias</strong>. Quando uma nova versão estiver disponível, você receberá o link de download por e-mail.</p>
+
+  <h3>Informações Finais</h3>
+  <table class="tabela">
+    <thead>
+      <tr><th>Item</th><th>Detalhe</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Versão atual</td><td>1.1.0</td></tr>
+      <tr><td>Sistema compatível</td><td>Windows 10 / 11 (64 bits)</td></tr>
+      <tr><td>Internet necessária</td><td>Apenas para ativação</td></tr>
+      <tr><td>Privacidade</td><td>Dados 100% locais</td></tr>
+      <tr><td>Atualizações</td><td>Gratuitas para sempre</td></tr>
+      <tr><td>Garantia</td><td>7 dias — reembolso total</td></tr>
+    </tbody>
+  </table>
+
+  <div class="destaque" style="text-align:center; margin-top:30px;">
+    <strong>Obrigada por escolher o Controle de Caixa & Juros Pro!</strong><br>
+    Seus juros não vão se calcular sozinhos. Aproveite ao máximo seu app.
+  </div>
+</div>
+
+</body>
+</html>
