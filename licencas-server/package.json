@@ -6,7 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "migrate": "node migrate.js"
+    "migrate": "node migrate.js",
+    "restaurar": "node restaurar-chave.js"
   },
   "dependencies": {
     "express": "^4.19.2",
