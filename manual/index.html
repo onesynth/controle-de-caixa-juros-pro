@@ -363,7 +363,7 @@
   </div>
   <h1>Controle de Caixa & Juros Pro</h1>
   <p class="subtitulo">Manual do Cliente — Instalação, ativação e uso completo</p>
-  <div class="capa-versao">Versão 1.1.0</div>
+  <div class="capa-versao">Versão 1.2.0</div>
   <p class="capa-footer">Controle de Caixa & Juros Pro © 2026 — Todos os direitos reservados</p>
 </div>
 
@@ -563,6 +563,7 @@
       <li>Vá para o <strong>Dashboard</strong></li>
       <li>Selecione a conta que deseja atualizar</li>
       <li>Digite o novo saldo e clique em <strong>Atualizar</strong></li>
+      <li>Preencha <strong>Entradas no período</strong> e <strong>Saídas no período</strong> (deixe em 0 quando não houver)</li>
       <li>O app calculará automaticamente os juros retroativos</li>
     </ul>
   </div>
@@ -610,11 +611,11 @@
   <div class="dia-card">
     <div class="dia-header">
       <span class="dia-badge">Dia 6</span>
-      <span class="dia-titulo">Configure o CDI e gere um relatório</span>
+      <span class="dia-titulo">Confira as taxas efetivas e gere um relatório</span>
     </div>
     <ul>
-      <li>Vá em <strong>Configurações</strong> e ajuste a <strong>Taxa CDI Atual</strong></li>
-      <li>Defina o <strong>Percentual do CDI</strong> (ex: 114%)</li>
+      <li>Vá em <strong>Configurações</strong> e confira a <strong>Taxa Efetiva Anual</strong> e a <strong>Diária</strong></li>
+      <li>Elas nascem dos seus próprios saldos — não há nada para digitar</li>
       <li>Vá em <strong>Relatórios</strong> e selecione o ano</li>
       <li>Clique em <strong>Exportar PDF</strong> para gerar seu primeiro relatório profissional</li>
     </ul>
@@ -652,7 +653,7 @@
     </div>
     <div class="func-card">
       <h4>Juros</h4>
-      <p>Juros do último registro e acumulado total no período.</p>
+      <p>Juros do último registro, acumulado total no período e a taxa efetiva ao dia e ao ano.</p>
     </div>
     <div class="func-card">
       <h4>Alertas de Vencimento</h4>
@@ -674,15 +675,17 @@
   <ul>
     <li><strong>Gráfico de Barras:</strong> Visualize juros por dia no mês</li>
     <li><strong>Navegação Mensal:</strong> Use as setas para alternar entre meses</li>
-    <li><strong>Resumo:</strong> Juros do mês, juros do ano e total de registros</li>
+    <li><strong>Resumo:</strong> Juros do mês, taxa efetiva do mês, juros do ano e total de registros</li>
     <li><strong>Detalhes:</strong> Saldo anterior → Saldo atual → Juros calculado</li>
+    <li><strong>Corrigir lançamento:</strong> Errou a data, o saldo, as entradas ou as saídas? Clique no lápis e ajuste</li>
+    <li><strong>Excluir lançamento:</strong> Remova um registro com confirmação — a cadeia de saldos é recalculada na hora</li>
   </ul>
 
   <h3>Relatórios</h3>
   <p>Gere relatórios profissionais anuais:</p>
   <ul>
     <li><strong>Gráfico Anual:</strong> Juros mês a mês com cores por performance</li>
-    <li><strong>Tabela Detalhada:</strong> Mês, juros, registros e status (Lucro/Perda)</li>
+    <li><strong>Tabela Detalhada:</strong> Mês, juros, taxa efetiva, registros e status (Lucro/Perda)</li>
     <li><strong>Resumo:</strong> Total anual, média mensal e melhor mês</li>
     <li><strong>Exportação:</strong> PDF profissional ou CSV para planilhas</li>
   </ul>
@@ -693,13 +696,24 @@
   <div class="secao-titulo"><span class="num">07</span> Configurações e Personalização</div>
   <div class="secao-sub">Ajuste o app conforme suas necessidades.</div>
 
-  <h3>Taxa CDI</h3>
-  <p>Configure a taxa vigente para cálculos de rendimento:</p>
+  <h3>Taxas Efetivas</h3>
+  <p>O app mede o rendimento <strong>real</strong> do seu caixa. As taxas são <strong>calculadas sozinhas</strong> a partir do histórico de saldos — não existe campo para digitar CDI nem percentual algum, e não há botão de salvar.</p>
   <ul>
-    <li><strong>Taxa CDI Atual (% ao ano):</strong> Informe a taxa CDI vigente (ex: 14,15%)</li>
-    <li><strong>Percentual do CDI (%):</strong> Defina o percentual aplicado (ex: 114% do CDI)</li>
+    <li><strong>Taxa Efetiva Anual:</strong> rendimento anualizado real, com juros compostos sobre 365 dias (ex: 14,15% ao ano)</li>
+    <li><strong>Taxa Efetiva Diária:</strong> o equivalente ao dia (ex: 0,0369% ao dia)</li>
   </ul>
-  <p>Clique em <strong>Salvar Configurações</strong> para aplicar.</p>
+  <p><strong>Como é calculado:</strong> o app mede os <em>dias corridos</em> entre o saldo anterior e o saldo atual e aplica a fórmula de juros compostos:</p>
+  <div class="destaque" style="text-align:center; font-size:15px; font-family: 'Consolas', monospace; color:#7c3aed;">
+    Anual = (1 + juros ÷ saldo anterior) <sup>(365 ÷ dias corridos)</sup> − 1
+  </div>
+  <p>Você encontra essas taxas em quatro lugares:</p>
+  <ul>
+    <li><strong>Dashboard</strong> — no card <em>Juros</em>, ao lado de quantos dias corridos foram contados</li>
+    <li><strong>Configurações</strong> — somente leitura, sempre atualizadas</li>
+    <li><strong>Histórico</strong> — card <em>Taxa do Mês</em>, que mostra o retorno real do mês</li>
+    <li><strong>Relatórios</strong> — coluna <em>Taxa</em> da tabela mensal</li>
+  </ul>
+  <div class="dica">Quando o saldo anterior e o novo saldo são do mesmo dia (0 dias corridos) não há como anualizar — o app exibe <strong>—</strong> em vez de um número enganoso.</div>
 
   <h3>Gerenciamento de Contas</h3>
   <table class="tabela">
@@ -708,7 +722,7 @@
     </thead>
     <tbody>
       <tr><td>Adicionar conta</td><td>Configurações → Adicionar Conta → Preencher nome e saldo</td></tr>
-      <tr><td>Editar conta</td><td>Clique no ícone de lápis ao lado da conta</td></tr>
+      <tr><td>Editar conta</td><td>Clique no ícone de lápis ao lado da conta — altera apenas o nome</td></tr>
       <tr><td>Excluir conta</td><td>Clique no ícone de lixeira → Confirmar exclusão</td></tr>
     </tbody>
   </table>
@@ -716,6 +730,7 @@
   <div class="aviso">
     <strong>Atenção:</strong> Excluir uma conta também remove todos os cofrinhos vinculados a ela. Esta ação não pode ser desfeita.
   </div>
+  <div class="dica">O saldo de uma conta nunca muda pela tela de edição: ele só é atualizado pelo Dashboard, para que a cadeia de juros continue consistente.</div>
 
   <h3>Temas</h3>
   <p>O app oferece dois temas visuais:</p>
@@ -824,7 +839,7 @@
       <tr><th>Item</th><th>Detalhe</th></tr>
     </thead>
     <tbody>
-      <tr><td>Versão atual</td><td>1.1.0</td></tr>
+      <tr><td>Versão atual</td><td>1.2.0</td></tr>
       <tr><td>Sistema compatível</td><td>Windows 10 / 11 (64 bits)</td></tr>
       <tr><td>Internet necessária</td><td>Apenas para ativação</td></tr>
       <tr><td>Privacidade</td><td>Dados 100% locais</td></tr>

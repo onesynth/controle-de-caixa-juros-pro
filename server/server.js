@@ -3,17 +3,27 @@ import cors from 'cors'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import contasRouter from './routes/contas.js'
+import criarRouterContas from './routes/contas.js'
+import criarRouterHistorico from './routes/historico.js'
+import { recalcularCadeia, atualizarTaxaGlobal } from './calculo.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, '..', 'src', 'data', 'dados.json')
 
+const CONFIG_PADRAO = () => ({
+  moeda: 'BRL',
+  taxaEfetivaAnual: null,
+  taxaEfetivaDiaria: null,
+  dataCalculo: null,
+  diasCalculo: null
+})
+
 export function loadData(file = DATA_FILE) {
-  if (!fs.existsSync(file)) return { contas: [], cofrinhos: [], historico: [], configuracoes: { cdiAtual: 14.15, percentualCDI: 114, moeda: 'BRL' } }
+  if (!fs.existsSync(file)) return { contas: [], cofrinhos: [], historico: [], configuracoes: CONFIG_PADRAO() }
   try {
     return JSON.parse(fs.readFileSync(file, 'utf-8'))
   } catch {
-    return { contas: [], cofrinhos: [], historico: [], configuracoes: { cdiAtual: 14.15, percentualCDI: 114, moeda: 'BRL' } }
+    return { contas: [], cofrinhos: [], historico: [], configuracoes: CONFIG_PADRAO() }
   }
 }
 
@@ -31,7 +41,8 @@ export function createApp(dataFile = DATA_FILE) {
   const app = express()
   app.use(cors())
   app.use(express.json())
-  app.use(contasRouter)
+  app.use(criarRouterContas(dataFile))
+  app.use(criarRouterHistorico(dataFile))
 
   app.get('/api/dados', (req, res) => res.json(load()))
 
@@ -41,35 +52,45 @@ export function createApp(dataFile = DATA_FILE) {
   })
 
   app.post('/api/atualizar-saldo', (req, res) => {
-    const { contaId, saldoAtual } = req.body
+    const { contaId } = req.body || {}
+    const saldoAtual = Number(req.body?.saldoAtual)
+    const entradas = Number(req.body?.entradas) || 0
+    const saidas = Number(req.body?.saidas) || 0
+
+    if (!contaId) return res.status(400).json({ erro: 'Informe a conta' })
+    if (!Number.isFinite(saldoAtual) || saldoAtual < 0) {
+      return res.status(400).json({ erro: 'Saldo atual inválido' })
+    }
+    if (entradas < 0 || saidas < 0) {
+      return res.status(400).json({ erro: 'Entradas e saídas não podem ser negativas' })
+    }
+
     const data = load()
     const conta = data.contas.find(c => c.id === contaId)
     if (!conta) return res.status(404).json({ erro: 'Conta não encontrada' })
 
-    const saldoAnterior = conta.saldoAtual
-    const entradas = 0
-    const saidas = 0
-    const jurosCalculado = saldoAtual - saldoAnterior - entradas + saidas
-
+    if (!data.historico) data.historico = []
     const registro = {
       id: novoId(),
       data: new Date().toISOString().slice(0, 10),
       contaId,
-      saldoAnterior,
+      saldoAnterior: conta.saldoAtual,
       saldoAtual,
       entradas,
       saidas,
-      jurosCalculado
+      jurosCalculado: 0
     }
-
-    conta.saldoAtual = saldoAtual
-    conta.dataAtualizacao = new Date().toISOString().slice(0, 10)
-
-    if (!data.historico) data.historico = []
     data.historico.push(registro)
 
+    recalcularCadeia(data, contaId)
+    const configuracoes = atualizarTaxaGlobal(data)
     save(data)
-    res.json({ conta, historico: registro })
+
+    res.json({
+      conta: data.contas.find(c => c.id === contaId),
+      historico: registro,
+      configuracoes
+    })
   })
 
   app.get('/api/configuracoes', (req, res) => {

@@ -1,7 +1,14 @@
 import { useState, useMemo } from 'react'
 import { Wallet, PiggyBank, TrendingUp, RefreshCw, ArrowDownLeft, ArrowUpRight, Clock, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { api, fmtBRL, calcularSaldoDisponivel } from '../api.js'
+import { api, fmtBRL, fmtPct, calcularSaldoDisponivel } from '../api.js'
+
+function parseValor(texto) {
+  const bruto = String(texto ?? '').trim()
+  if (bruto === '') return 0
+  const n = parseFloat(bruto.replace(/[^\d.,]/g, '').replace(',', '.'))
+  return Number.isFinite(n) ? n : NaN
+}
 
 function calcularDiasRestantes(dataPrazo) {
   if (!dataPrazo) return null
@@ -33,6 +40,8 @@ export default function Dashboard({ dados, onChange }) {
 
   const [contaSelecionada, setContaSelecionada] = useState(contas[0]?.id || '')
   const [novoSaldo, setNovoSaldo] = useState('')
+  const [entradas, setEntradas] = useState('')
+  const [saidas, setSaidas] = useState('')
 
   const conta = contas.find(c => c.id === contaSelecionada)
 
@@ -76,17 +85,25 @@ export default function Dashboard({ dados, onChange }) {
       toast.error('Selecione uma conta')
       return
     }
-    const valor = parseFloat(novoSaldo.replace(/[^\d.,]/g, '').replace(',', '.'))
-    if (isNaN(valor) || valor < 0) {
+    const valor = parseValor(novoSaldo)
+    const e = parseValor(entradas)
+    const s = parseValor(saidas)
+    if (!Number.isFinite(valor) || valor < 0) {
       toast.error('Digite um valor válido')
       return
     }
+    if (!Number.isFinite(e) || !Number.isFinite(s) || e < 0 || s < 0) {
+      toast.error('Entradas e saídas não podem ser negativas')
+      return
+    }
     try {
-      await api.atualizarSaldo({ contaId: contaSelecionada, saldoAtual: valor })
+      await api.atualizarSaldo({ contaId: contaSelecionada, saldoAtual: valor, entradas: e, saidas: s })
       setNovoSaldo('')
+      setEntradas('')
+      setSaidas('')
       onChange()
       toast.success('Saldo atualizado com sucesso!')
-    } catch (e) {
+    } catch (err) {
       toast.error('Erro ao atualizar saldo')
     }
   }
@@ -108,6 +125,16 @@ export default function Dashboard({ dados, onChange }) {
           <div className="card-titulo"><TrendingUp size={18} /> Juros</div>
           <div className="card-valor">{fmtBRL(jurosHoje)}</div>
           <div className="card-sub">Acumulado: {fmtBRL(jurosAcumulado)}</div>
+          <div className="card-sub" style={{ marginTop: 4 }}>
+            Efetiva: {fmtPct(config.taxaEfetivaDiaria, 4)} ao dia · {fmtPct(config.taxaEfetivaAnual, 2)} ao ano
+          </div>
+          <div className="card-sub" style={{ fontSize: 11 }}>
+            {config.dataCalculo
+              ? config.diasCalculo > 0
+                ? `Calculado em ${config.dataCalculo} · ${config.diasCalculo} dia(s) corrido(s)`
+                : `Última atualização em ${config.dataCalculo} — mesmo dia, sem taxa`
+              : 'Atualize o saldo para calcular a taxa efetiva'}
+          </div>
         </div>
       </div>
 
@@ -145,6 +172,24 @@ export default function Dashboard({ dados, onChange }) {
           placeholder="Novo saldo (ex: 10.000,00)"
           value={novoSaldo}
           onChange={e => setNovoSaldo(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAtualizar()}
+        />
+        <input
+          type="text"
+          className="secundario"
+          placeholder="Entradas no período (ex: 500,00)"
+          title="Depósitos e outros créditos desde a última atualização"
+          value={entradas}
+          onChange={e => setEntradas(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAtualizar()}
+        />
+        <input
+          type="text"
+          className="secundario"
+          placeholder="Saídas no período (ex: 200,00)"
+          title="Saques e outros débitos desde a última atualização"
+          value={saidas}
+          onChange={e => setSaidas(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAtualizar()}
         />
         <button className="btn-atualizar" onClick={handleAtualizar}>

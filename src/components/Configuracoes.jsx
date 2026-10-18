@@ -1,42 +1,26 @@
 import { useState } from 'react'
 import { Settings, PlusCircle, Pencil, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { api, fmtBRL } from '../api.js'
+import { api, fmtBRL, fmtPct } from '../api.js'
 import ConfirmDialog from './ConfirmDialog.jsx'
 
 export default function Configuracoes({ dados, onChange }) {
   const contas = dados.contas || []
   const config = dados.configuracoes || {}
 
-  const [formConfig, setFormConfig] = useState({
-    cdiAtual: String(config.cdiAtual || 14.15),
-    percentualCDI: String(config.percentualCDI || 114),
-  })
-
   const [modalConta, setModalConta] = useState(false)
   const [editandoConta, setEditandoConta] = useState(null)
-  const [formConta, setFormConta] = useState({ nome: '', saldoAtual: '' })
+  const [formConta, setFormConta] = useState({ nome: '' })
   const [confirmar, setConfirmar] = useState(null)
 
-  const salvarConfig = async () => {
-    const cdi = parseFloat(formConfig.cdiAtual.replace(',', '.')) || 0
-    const pct = parseFloat(formConfig.percentualCDI.replace(',', '.')) || 0
-    try {
-      await api.salvarConfig({ cdiAtual: cdi, percentualCDI: pct })
-      toast.success('Configurações salvas!')
-    } catch (e) {
-      toast.error('Erro ao salvar configurações')
-    }
-  }
-
   const abrirNovaConta = () => {
-    setFormConta({ nome: '', saldoAtual: '' })
+    setFormConta({ nome: '' })
     setEditandoConta(null)
     setModalConta(true)
   }
 
   const abrirEditarConta = (c) => {
-    setFormConta({ nome: c.nome, saldoAtual: String(c.saldoAtual) })
+    setFormConta({ nome: c.nome })
     setEditandoConta(c)
     setModalConta(true)
   }
@@ -44,7 +28,7 @@ export default function Configuracoes({ dados, onChange }) {
   const fecharConta = () => {
     setModalConta(false)
     setEditandoConta(null)
-    setFormConta({ nome: '', saldoAtual: '' })
+    setFormConta({ nome: '' })
   }
 
   const salvarConta = async () => {
@@ -52,8 +36,7 @@ export default function Configuracoes({ dados, onChange }) {
       toast.error('Digite o nome da conta')
       return
     }
-    const saldo = parseFloat(formConta.saldoAtual.replace(/[^\d.,]/g, '').replace(',', '.')) || 0
-    const payload = { nome: formConta.nome.trim(), saldoAtual: saldo }
+    const payload = { nome: formConta.nome.trim() }
     try {
       if (editandoConta) {
         await api.editConta(editandoConta.id, payload)
@@ -87,24 +70,30 @@ export default function Configuracoes({ dados, onChange }) {
         <h3><Settings size={20} /> Configurações</h3>
 
         <div className="config-campo">
-          <label>Taxa CDI Atual (% ao ano)</label>
+          <label>Taxa efetiva ao ano</label>
           <input
             type="text"
-            value={formConfig.cdiAtual}
-            onChange={e => setFormConfig({ ...formConfig, cdiAtual: e.target.value })}
+            value={fmtPct(config.taxaEfetivaAnual, 2)}
+            readOnly
+            disabled
           />
         </div>
         <div className="config-campo">
-          <label>Percentual do CDI (%)</label>
+          <label>Taxa efetiva ao dia</label>
           <input
             type="text"
-            value={formConfig.percentualCDI}
-            onChange={e => setFormConfig({ ...formConfig, percentualCDI: e.target.value })}
+            value={fmtPct(config.taxaEfetivaDiaria, 4)}
+            readOnly
+            disabled
           />
         </div>
-        <button className="btn-atualizar" onClick={salvarConfig} style={{ marginTop: 8 }}>
-          Salvar Configurações
-        </button>
+        <div className="config-observacao">
+          {config.dataCalculo
+            ? config.diasCalculo > 0
+              ? `Calculado em ${config.dataCalculo} · ${config.diasCalculo} dia(s) corrido(s)`
+              : `Última atualização em ${config.dataCalculo} — mesmo dia, sem taxa`
+            : 'Aguardando a primeira atualização de saldo no Dashboard.'}
+        </div>
 
         <div className="contas-lista">
           <h4>Contas Cadastradas</h4>
@@ -149,15 +138,10 @@ export default function Configuracoes({ dados, onChange }) {
                 onChange={e => setFormConta({ ...formConta, nome: e.target.value })}
               />
             </div>
-            <div className="form-campo">
-              <label>Saldo Atual</label>
-              <input
-                type="text"
-                placeholder="Ex: 10.000,00"
-                value={formConta.saldoAtual}
-                onChange={e => setFormConta({ ...formConta, saldoAtual: e.target.value })}
-              />
-            </div>
+            <p style={{ fontSize: 12, color: 'var(--texto-fraco)', marginTop: 4 }}>
+              O saldo é alterado apenas pelo Dashboard, para que os lançamentos e as taxas
+              permaneçam consistentes.
+            </p>
             <div className="form-botoes">
               <button className="btn-cancelar" onClick={fecharConta}>Cancelar</button>
               <button className="btn-salvar" onClick={salvarConta}>

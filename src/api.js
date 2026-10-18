@@ -23,12 +23,19 @@ export const api = {
 
   atualizarSaldo: dados => fetchJSON(`${API}/api/atualizar-saldo`, { method: 'POST', body: JSON.stringify(dados) }),
   historico: () => fetchJSON(`${API}/api/historico`),
+  editHistorico: (id, dados) => fetchJSON(`${API}/api/historico/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
+  delHistorico: id => fetchJSON(`${API}/api/historico/${id}`, { method: 'DELETE' }),
 
   configuracoes: () => fetchJSON(`${API}/api/configuracoes`),
   salvarConfig: c => fetchJSON(`${API}/api/configuracoes`, { method: 'PUT', body: JSON.stringify(c) }),
 }
 
 export const fmtBRL = v => (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+export const fmtPct = (v, casas = 2) =>
+  v === null || v === undefined || Number.isNaN(Number(v))
+    ? '—'
+    : `${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })}%`
 
 export function calcularJurosRetroativo(saldoAnterior, saldoAtual, entradas, saidas) {
   return saldoAtual - saldoAnterior - entradas + saidas

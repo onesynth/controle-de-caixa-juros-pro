@@ -148,6 +148,7 @@ button { font-family: inherit; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--roxo) 22%, transparent);
 }
 .atualizar-saldo input { min-width: 200px; font-weight: 600; }
+.atualizar-saldo input.secundario { min-width: 160px; font-weight: 500; }
 
 .btn-atualizar {
   padding: 10px 24px; border: none; border-radius: 10px; cursor: pointer;
@@ -183,6 +184,7 @@ button { font-family: inherit; }
 .historico-juros { color: var(--roxo); font-weight: 700; }
 .historico-juros.positivo { color: var(--verde); }
 .historico-juros.negativo { color: var(--vermelho); }
+.historico-acoes { display: flex; gap: 2px; }
 
 .historico-vazio {
   text-align: center; padding: 32px; color: var(--texto-fraco); font-size: 14px;
@@ -204,9 +206,10 @@ button { font-family: inherit; }
 }
 
 .historico-cards-resumo {
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 12px; margin-bottom: 20px;
 }
+@media (max-width: 1100px) { .historico-cards-resumo { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 700px) { .historico-cards-resumo { grid-template-columns: 1fr; } }
 .historico-card {
   background: var(--superficie); border-radius: 12px; padding: 14px 16px;
@@ -316,6 +319,7 @@ button { font-family: inherit; }
 .relatorio-mes-juros.positivo { color: var(--verde); font-weight: 600; }
 .relatorio-mes-juros.negativo { color: var(--vermelho); font-weight: 600; }
 .relatorio-mes-registros { color: var(--texto-fraco); text-align: center; }
+.relatorio-mes-taxa { text-align: right; font-weight: 600; }
 
 .relatorio-status {
   padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
@@ -402,6 +406,13 @@ button { font-family: inherit; }
 .config-campo input:focus, .config-campo select:focus {
   outline: none; border-color: var(--roxo);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--roxo) 22%, transparent);
+}
+.config-campo input:disabled {
+  opacity: 1; cursor: default; font-weight: 700; color: var(--texto);
+}
+.config-observacao {
+  font-size: 12px; color: var(--texto-fraco);
+  margin: -6px 0 16px; padding-left: 172px;
 }
 
 .contas-lista { margin-top: 20px; }

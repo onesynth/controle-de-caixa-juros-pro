@@ -65,7 +65,7 @@ export default function App() {
 
       {aba === 'dashboard' && <Dashboard dados={dados} onChange={recarregar} />}
       {aba === 'cofrinhos' && <Cofrinhos dados={dados} onChange={recarregar} />}
-      {aba === 'historico' && <Historico dados={dados} />}
+      {aba === 'historico' && <Historico dados={dados} onChange={recarregar} />}
       {aba === 'relatorio' && <Relatorio dados={dados} />}
       {aba === 'config' && <Configuracoes dados={dados} onChange={recarregar} />}
     </div>

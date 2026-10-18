@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { FileText, Download, ChevronLeft, ChevronRight, TrendingUp, Calendar, Award } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { api, fmtBRL } from '../api.js'
+import { api, fmtBRL, fmtPct } from '../api.js'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -60,13 +60,14 @@ export default function Relatorio({ dados }) {
   }, [dadosMensais])
 
   const exportarCSV = () => {
-    const linhas = ['Mês,Juros,Registros']
+    const linhas = ['Mês,Juros,Taxa,Registros']
     dadosMensais.forEach(m => {
-      linhas.push(`${m.nomeCompleto},${m.total.toFixed(2)},${m.registros}`)
+      const taxa = m.taxa === null ? '' : m.taxa.toFixed(4)
+      linhas.push(`${m.nomeCompleto},${m.total.toFixed(2)},${taxa},${m.registros}`)
     })
     linhas.push('')
-    linhas.push(`Total Anual,${resumoAnual.total.toFixed(2)},${historicoAno.length}`)
-    linhas.push(`Média Mensal,${resumoAnual.media.toFixed(2)},`)
+    linhas.push(`Total Anual,${resumoAnual.total.toFixed(2)},,${historicoAno.length}`)
+    linhas.push(`Média Mensal,${resumoAnual.media.toFixed(2)},,`)
 
     const csv = linhas.join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -112,6 +113,7 @@ export default function Relatorio({ dados }) {
       .map(m => [
         m.nomeCompleto,
         fmtBRL(m.total),
+        m.taxa === null ? '—' : fmtPct(m.taxa, 2),
         String(m.registros),
         m.positivo ? 'Lucro' : 'Perda'
       ])
@@ -123,16 +125,17 @@ export default function Relatorio({ dados }) {
 
       autoTable(doc, {
         startY: 103,
-        head: [['Mes', 'Juros', 'Registros', 'Status']],
+        head: [['Mes', 'Juros', 'Taxa', 'Registros', 'Status']],
         body: tableData,
         theme: 'grid',
         headStyles: { fillColor: [108, 60, 224], fontSize: 10 },
         bodyStyles: { fontSize: 9 },
         columnStyles: {
-          0: { cellWidth: 50 },
-          1: { cellWidth: 40, halign: 'right' },
-          2: { cellWidth: 25, halign: 'center' },
-          3: { cellWidth: 30, halign: 'center' }
+          0: { cellWidth: 45 },
+          1: { cellWidth: 38, halign: 'right' },
+          2: { cellWidth: 28, halign: 'right' },
+          3: { cellWidth: 22, halign: 'center' },
+          4: { cellWidth: 28, halign: 'center' }
         },
         margin: { left: 20, right: 20 }
       })
@@ -229,6 +232,7 @@ export default function Relatorio({ dados }) {
                   <tr>
                     <th>Mês</th>
                     <th>Juros</th>
+                    <th>Taxa</th>
                     <th>Registros</th>
                     <th>Status</th>
                   </tr>
@@ -239,6 +243,9 @@ export default function Relatorio({ dados }) {
                       <td className="relatorio-mes-nome">{m.nomeCompleto}</td>
                       <td className={`relatorio-mes-juros ${m.total >= 0 ? 'positivo' : 'negativo'}`}>
                         {m.registros > 0 ? fmtBRL(m.total) : '—'}
+                      </td>
+                      <td className="relatorio-mes-taxa">
+                        {m.registros > 0 && m.taxa !== null ? fmtPct(m.taxa, 2) : '—'}
                       </td>
                       <td className="relatorio-mes-registros">{m.registros}</td>
                       <td>
@@ -257,6 +264,7 @@ export default function Relatorio({ dados }) {
                     <td className={`relatorio-mes-juros ${resumoAnual.total >= 0 ? 'positivo' : 'negativo'}`}>
                       <strong>{fmtBRL(resumoAnual.total)}</strong>
                     </td>
+                    <td></td>
                     <td><strong>{historicoAno.length}</strong></td>
                     <td></td>
                   </tr>
