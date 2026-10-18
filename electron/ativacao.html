@@ -39,7 +39,7 @@
     <div class="sucesso" id="sucesso"></div>
     <div class="offline-msg" id="offline">
       Servidor temporariamente indisponível. Você pode usar o app em modo offline.
-      <br>Conecte-se à internet em até <strong id="diasRestantes">15</strong> dias para revalidar.
+      <br>Conecte-se à internet em até <strong id="diasRestantes">30</strong> dias para revalidar.
     </div>
   </div>
 <script>
@@ -65,7 +65,6 @@
     try {
       const modo = params.get('modo')
       const r = await ipcRenderer.invoke(modo === 'bloqueado' ? 'revalidar-licenca' : 'ativar-licenca', $('chave').value)
-      if (r.ok) { window.close(); return }
       if (r.offline) {
         $('offline').style.display = 'block'
         $('btn').disabled = false
@@ -73,6 +72,7 @@
         $('btn').onclick = () => { window.close() }
         return
       }
+      if (r.ok) { window.close(); return }
       $('erro').textContent = r.erro || 'Não foi possível ativar. Verifique sua conexão.'
       $('btnRetry').style.display = 'block'
     } catch (e) {

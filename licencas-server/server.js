@@ -1,4 +1,4 @@
-// v1.1.3 — @neondatabase/serverless
+// v1.1.4 — @neondatabase/serverless — /validar re-registra máquina
 import express from 'express'
 import crypto from 'crypto'
 import path from 'path'
@@ -36,14 +36,12 @@ function assinar(payload) {
   return `${corpo}.${mac}`
 }
 
-function verificar(token) {
+function verificarAssinatura(token) {
   try {
     const [corpo, mac] = String(token || '').split('.')
     const esperado = crypto.createHmac('sha256', SEGREDO).update(corpo).digest('base64url')
     if (!crypto.timingSafeEqual(Buffer.from(mac), Buffer.from(esperado))) return null
-    const payload = JSON.parse(Buffer.from(corpo, 'base64url').toString())
-    if (new Date(payload.validoAte) < new Date()) return null
-    return payload
+    return JSON.parse(Buffer.from(corpo, 'base64url').toString())
   } catch { return null }
 }
 
@@ -83,13 +81,20 @@ app.post('/ativar', async (req, res) => {
 app.post('/validar', async (req, res) => {
   try {
     const { token } = req.body || {}
-    const p = verificar(token)
-    if (!p) return res.status(403).json({ erro: 'Licença expirada ou inválida. Conecte-se à internet para revalidar.' })
+    const p = verificarAssinatura(token)
+    if (!p || !p.chave || !p.idMaquina)
+      return res.status(403).json({ erro: 'Token inválido. Ative a licença novamente.' })
 
     const lic = await buscarChave(p.chave)
-    const maquinas = lic ? (Array.isArray(lic.maquinas) ? lic.maquinas : []) : []
-    if (!lic || lic.bloqueada || !maquinas.includes(p.idMaquina))
+    if (!lic || lic.bloqueada)
       return res.status(403).json({ erro: 'Licença desativada. Fale com o suporte.' })
+
+    const maquinas = Array.isArray(lic.maquinas) ? lic.maquinas : []
+    if (!maquinas.includes(p.idMaquina)) {
+      if (maquinas.length >= LIMITE_MAQUINAS)
+        return res.status(403).json({ erro: 'Esta chave já está ativa em outra máquina. Fale com o suporte para transferir a licença.' })
+      await adicionarMaquina(lic.chave, p.idMaquina)
+    }
 
     const payload = {
       chave: p.chave,

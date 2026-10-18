@@ -7,7 +7,9 @@ import { app } from 'electron'
 // URL do servidor de licenças (Render)
 export const URL_LICENCAS = process.env.URL_LICENCAS || 'https://controle-caixa-juros-licencas.onrender.com'
 const REVALIDAR_DIAS = 7
-const TOLERANCIA_DIAS = 15
+const TOLERANCIA_DIAS = 30
+const TIMEOUT_MS = 40000
+const TENTATIVAS = 2
 
 function arquivoLicenca() {
   const dir = process.env.APPDATA
@@ -31,21 +33,35 @@ export function salvarLicenca(lic) {
 }
 
 async function chamar(rota, corpo) {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 15000)
-  try {
-    const r = await fetch(`${URL_LICENCAS}${rota}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(corpo),
-      signal: controller.signal
-    })
-    const d = await r.json().catch(() => ({}))
-    if (!r.ok) throw new Error(d.erro || `Erro ${r.status}`)
-    return d
-  } finally {
-    clearTimeout(timeout)
+  let ultimoErro
+  for (let tentativa = 1; tentativa <= TENTATIVAS; tentativa++) {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+    try {
+      const r = await fetch(`${URL_LICENCAS}${rota}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(corpo),
+        signal: controller.signal
+      })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok) {
+        // Recusa do servidor: marca o status para o chamador diferenciar de falha de rede
+        const erro = new Error(d.erro || `Erro ${r.status}`)
+        erro.httpStatus = r.status
+        throw erro
+      }
+      return d
+    } catch (e) {
+      if (e.httpStatus) throw e
+      ultimoErro = e
+    } finally {
+      clearTimeout(timeout)
+    }
+    // Falha de rede/timeout: tenta de novo uma vez antes de desistir
+    if (tentativa < TENTATIVAS) await new Promise(res => setTimeout(res, 1500))
   }
+  throw ultimoErro
 }
 
 export async function ativar(chave) {
@@ -72,6 +88,10 @@ export async function verificarLicenca() {
     salvarLicenca(novo)
     return { status: 'ok', licenca: novo, versao: d.versao, downloadUrl: d.downloadUrl }
   } catch (e) {
+    // Recusa do servidor (4xx): não é problema de rede — bloqueia com a mensagem real
+    if (e.httpStatus && e.httpStatus >= 400 && e.httpStatus < 500) {
+      return { status: 'bloqueado', erro: e.message, licenca: lic }
+    }
     // Servidor indisponível ou erro de rede: permite uso offline
     if (dias <= TOLERANCIA_DIAS) {
       return { status: 'ok', licenca: lic, offline: true }
@@ -79,6 +99,14 @@ export async function verificarLicenca() {
     // Passou da tolerância: bloqueia
     return { status: 'bloqueado', erro: e.message, licenca: lic }
   }
+}
+
+// Tenta reativar a licença com a chave salva localmente (fallback quando /validar falha)
+export async function reativarComChaveSalva() {
+  const lic = licencaSalva()
+  if (!lic?.chave) return { erro: 'Chave de licença não encontrada. Ative novamente.' }
+  const r = await ativar(lic.chave)
+  return { ok: true, licenca: r.licenca, versao: r.versao, downloadUrl: r.downloadUrl }
 }
 
 // Verificação silenciosa para uso offline (sem bloquear o app)

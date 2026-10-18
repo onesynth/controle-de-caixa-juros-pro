@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { createApp, loadData, saveData } from '../server/server.js'
-import { ativar, verificarLicenca, licencaSalva } from './licenca.js'
+import { ativar, verificarLicenca, licencaSalva, reativarComChaveSalva } from './licenca.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const NOME = 'Controle de Caixa & Juros Pro'
@@ -156,16 +156,40 @@ ipcMain.handle('ativar-licenca', async (e, chave) => {
   }
 })
 
+// Erros vêm do servidor com texto pronto; falhas de rede viram mensagem amigável
+function erroAmigavel(e) {
+  if (e?.httpStatus) return e.message
+  return 'Não foi possível conectar ao servidor de licenças. Verifique sua internet e tente novamente.'
+}
+
 ipcMain.handle('revalidar-licenca', async () => {
   try {
     const r = await verificarLicenca()
-    if (r.status !== 'ok') return { erro: 'Não foi possível revalidar. Verifique sua internet e tente novamente.' }
-    if (r.offline) return { ok: true, offline: true }
-    if (winAtivacao) winAtivacao.close()
-    if (!win || win.isDestroyed()) criarJanela()
-    return { ok: true }
+    if (r.status === 'ok') {
+      if (r.offline) {
+        // Deixa o app pronto por trás e informa o modo offline na janela de ativação
+        if (!win || win.isDestroyed()) criarJanela()
+        return { ok: true, offline: true }
+      }
+      if (winAtivacao) winAtivacao.close()
+      if (!win || win.isDestroyed()) criarJanela()
+      return { ok: true }
+    }
+
+    // /validar falhou — tenta reativar com a chave salva localmente
+    try {
+      const ra = await reativarComChaveSalva()
+      if (ra.ok) {
+        if (winAtivacao) winAtivacao.close()
+        if (!win || win.isDestroyed()) criarJanela()
+        return { ok: true }
+      }
+      return { erro: ra.erro || 'Não foi possível revalidar.' }
+    } catch (errAtiv) {
+      return { erro: erroAmigavel(errAtiv) }
+    }
   } catch (err) {
-    return { erro: err.message }
+    return { erro: erroAmigavel(err) }
   }
 })
 
