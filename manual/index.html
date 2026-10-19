@@ -80,7 +80,7 @@
   }
   .capa-footer {
     position: absolute;
-    bottom: 40px;
+    bottom: 85px;
     font-size: 12px;
     opacity: 0.7;
     z-index: 1;
@@ -89,7 +89,8 @@
   /* ===== SUMÁRIO ===== */
   .sumario {
     page-break-after: always;
-    padding: 50px 60px;
+    page-break-inside: avoid;
+    padding: 50px 60px 100px;
   }
   .sumario h2 {
     font-size: 26px;
@@ -118,7 +119,8 @@
   /* ===== CONTEÚDO GERAL ===== */
   .pagina {
     page-break-after: always;
-    padding: 50px 60px;
+    page-break-inside: avoid;
+    padding: 50px 60px 100px;
     min-height: 297mm;
   }
   .pagina:last-child { page-break-after: avoid; }
@@ -306,20 +308,6 @@
     color: #4b5563;
   }
 
-  /* ===== RODAPÉ ===== */
-  .rodape-pagina {
-    position: fixed;
-    bottom: 20px;
-    left: 60px;
-    right: 60px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: #9ca3af;
-    border-top: 1px solid #e5e7eb;
-    padding-top: 8px;
-  }
-
   /* ===== SUPORTE ===== */
   .suporte-box {
     background: linear-gradient(135deg, #7c3aed, #3b82f6);
@@ -437,10 +425,7 @@
   <div class="dica">
     <strong>Dica:</strong> Após a ativação inicial, o app funciona completamente offline. Seus dados ficam salvos apenas no seu computador.
   </div>
-</div>
-
 <!-- ==================== 03. INSTALAÇÃO ==================== -->
-<div class="pagina">
   <div class="secao-titulo"><span class="num">03</span> Instalação</div>
   <div class="secao-sub">Escolha uma das duas versões disponíveis para download.</div>
 
@@ -471,6 +456,10 @@
     <span class="passo-num">6</span>
     <span class="passo-texto">Abra o programa pelo atalho na área de trabalho ou menu iniciar</span>
   </div>
+</div>
+
+<!-- ==================== 03. INSTALAÇÃO (continuação — Opção 2 Portátil) ==================== -->
+<div class="pagina">
 
   <h3>Opção 2 — Versão Portátil (sem instalação)</h3>
   <p>Ideal se você não quer instalar nada no computador ou usa PC de terceiros.</p>
@@ -491,10 +480,7 @@
   <div class="aviso">
     <strong>Atenção:</strong> Na versão portátil, seus dados são salvos em <code>%APPDATA%\controle-caixa-juros-pro</code> — não ao lado do executável. Mover ou apagar o arquivo <code>.exe</code> não apaga seu histórico.
   </div>
-</div>
-
 <!-- ==================== 04. ATIVAÇÃO ==================== -->
-<div class="pagina">
   <div class="secao-titulo"><span class="num">04</span> Ativação da Licença</div>
   <div class="secao-sub">Como ativar seu aplicativo pela primeira vez.</div>
 
@@ -527,16 +513,17 @@
 
   <h4>Chave não encontrada</h4>
   <p>Verifique sua caixa de entrada e a pasta de spam. Assim que o pagamento for confirmado, você recebe a chave de licença por e-mail.</p>
+</div>
+
+<!-- ==================== 04. ATIVAÇÃO (continuação) ==================== -->
+<div class="pagina">
 
   <h4>Servidor indisponível</h4>
   <p>Se o servidor de licenças estiver temporariamente offline, o app entrará em <strong>modo offline</strong>. Você poderá usar normalmente por até <strong>15 dias</strong>. Conecte-se à internet nesse período para revalidar automaticamente.</p>
 
   <h4>Revalidação</h4>
   <p>Se sua licença precisar ser revalidada, basta conectar à internet e clicar em <strong>Tentar novamente</strong> na tela de ativação.</p>
-</div>
-
 <!-- ==================== 05. GUIA 7 DIAS ==================== -->
-<div class="pagina">
   <div class="secao-titulo"><span class="num">05</span> Guia Rápido: Seus Primeiros 7 Dias</div>
   <div class="secao-sub">Siga este roteiro para aproveitar ao máximo o app na primeira semana.</div>
 
@@ -567,6 +554,10 @@
       <li>O app calculará automaticamente os juros retroativos</li>
     </ul>
   </div>
+</div>
+
+<!-- ==================== 05. GUIA 7 DIAS (continuação — Dias 3 a 6) ==================== -->
+<div class="pagina">
 
   <div class="dia-card">
     <div class="dia-header">
@@ -620,6 +611,10 @@
       <li>Clique em <strong>Exportar PDF</strong> para gerar seu primeiro relatório profissional</li>
     </ul>
   </div>
+</div>
+
+<!-- ==================== 05. GUIA 7 DIAS (continuação — Dia 7 + Funcionalidades) ==================== -->
+<div class="pagina">
 
   <div class="dia-card">
     <div class="dia-header">
@@ -633,10 +628,7 @@
       <li>Acompanhe o rendimento mensal nos relatórios</li>
     </ul>
   </div>
-</div>
-
 <!-- ==================== 06. FUNCIONALIDADES ==================== -->
-<div class="pagina">
   <div class="secao-titulo"><span class="num">06</span> Conhecendo as Funcionalidades</div>
   <div class="secao-sub">Visão completa de cada seção do aplicativo.</div>
 
@@ -669,6 +661,10 @@
     <li><strong>Edição e Exclusão:</strong> Altere ou remova cofrinhos a qualquer momento</li>
     <li><strong>Total Consolidado:</strong> Veja a soma de todos os cofrinhos no rodapé</li>
   </ul>
+</div>
+
+<!-- ==================== 06. FUNCIONALIDADES (continuação — Histórico e Relatórios) ==================== -->
+<div class="pagina">
 
   <h3>Histórico</h3>
   <p>Acompanhe todas as movimentações e o cálculo de juros:</p>
@@ -689,10 +685,7 @@
     <li><strong>Resumo:</strong> Total anual, média mensal e melhor mês</li>
     <li><strong>Exportação:</strong> PDF profissional ou CSV para planilhas</li>
   </ul>
-</div>
-
 <!-- ==================== 07. CONFIGURAÇÕES ==================== -->
-<div class="pagina">
   <div class="secao-titulo"><span class="num">07</span> Configurações e Personalização</div>
   <div class="secao-sub">Ajuste o app conforme suas necessidades.</div>
 
@@ -706,6 +699,11 @@
   <div class="destaque" style="text-align:center; font-size:15px; font-family: 'Consolas', monospace; color:#7c3aed;">
     Anual = (1 + juros ÷ saldo anterior) <sup>(365 ÷ dias corridos)</sup> − 1
   </div>
+</div>
+
+<!-- ==================== 07. CONFIGURAÇÕES (continuação) ==================== -->
+<div class="pagina">
+
   <p>Você encontra essas taxas em quatro lugares:</p>
   <ul>
     <li><strong>Dashboard</strong> — no card <em>Juros</em>, ao lado de quantos dias corridos foram contados</li>
@@ -763,10 +761,7 @@
   <div class="dica">
     <strong>Dica:</strong> Conecte-se à internet pelo menos uma vez por mês para manter a licença sempre validada automaticamente.
   </div>
-</div>
-
 <!-- ==================== 09. SOLUÇÃO DE PROBLEMAS ==================== -->
-<div class="pagina">
   <div class="secao-titulo"><span class="num">09</span> Solução de Problemas</div>
   <div class="secao-sub">Dúvidas frequentes e como resolvê-las.</div>
 
@@ -778,6 +773,10 @@
     <li>Execute como administrador (clique com o botão direito → Executar como administrador)</li>
     <li>Desative temporariamente o antivírus e teste novamente</li>
   </ul>
+</div>
+
+<!-- ==================== 09. SOLUÇÃO DE PROBLEMAS (continuação) ==================== -->
+<div class="pagina">
 
   <h4>Erro na ativação da chave</h4>
   <ul>
@@ -805,10 +804,7 @@
     <li>Sua licença será liberada do computador antigo e ativada no novo</li>
     <li>Este serviço é gratuito</li>
   </ul>
-</div>
-
 <!-- ==================== 10. SUPORTE ==================== -->
-<div class="pagina">
   <div class="secao-titulo"><span class="num">10</span> Suporte e Garantia</div>
   <div class="secao-sub">Estamos aqui para ajudar.</div>
 
@@ -818,6 +814,10 @@
     <div class="suporte-email">onesynth360@gmail.com</div>
     <p style="margin-top:14px; font-size:13px;">Tempo de resposta: até 24 horas em dias úteis</p>
   </div>
+</div>
+
+<!-- ==================== 10. SUPORTE (continuação) ==================== -->
+<div class="pagina">
 
   <h3>O que o suporte cobre</h3>
   <ul>
