@@ -68,7 +68,7 @@ Tabela `chaves`:
 - `obs` TEXT
 
 Tabela `config`:
-- `chave` VARCHAR(50) PRIMARY KEY (ex: 'versao', 'downloadUrl')
+- `chave` VARCHAR(50) PRIMARY KEY (ex: 'versao', 'downloadUrl', 'downloadUrlPortatil')
 - `valor` TEXT
 
 ## Migração de JSON para Neon

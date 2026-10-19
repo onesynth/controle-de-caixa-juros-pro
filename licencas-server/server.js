@@ -183,9 +183,10 @@ admin.get('/config', async (req, res) => {
 admin.post('/config', async (req, res) => {
   try {
     const atual = await buscarConfig()
-    const { versao, downloadUrl } = req.body || {}
+    const { versao, downloadUrl, downloadUrlPortatil } = req.body || {}
     if (versao !== undefined) atual.versao = String(versao).trim()
     if (downloadUrl !== undefined) atual.downloadUrl = String(downloadUrl).trim()
+    if (downloadUrlPortatil !== undefined) atual.downloadUrlPortatil = String(downloadUrlPortatil).trim()
     await salvarConfig(atual)
     res.json({ ok: true, config: atual })
   } catch (e) {

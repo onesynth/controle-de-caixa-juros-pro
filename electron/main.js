@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { createApp, loadData, saveData } from '../server/server.js'
-import { ativar, verificarLicenca, licencaSalva, reativarComChaveSalva } from './licenca.js'
+import { ativar, verificarLicenca, licencaSalva, reativarComChaveSalva, forcarRevalidacao } from './licenca.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const NOME = 'Controle de Caixa & Juros Pro'
@@ -99,20 +99,32 @@ function temNovaVersao(local, remota) {
   return false
 }
 
-async function verificarAtualizacao(versao, downloadUrl) {
-  if (!versao || !downloadUrl) return
+// O target "portable" do electron-builder exporta esta variável de ambiente
+function ehPortatil() {
+  return !!process.env.PORTABLE_EXECUTABLE_DIR
+}
+
+// Portátil baixa a portátil; instalado baixa o setup. Se faltar o link pedido, cai no outro
+function linkParaDownload(downloadUrl, downloadUrlPortatil) {
+  if (ehPortatil()) return downloadUrlPortatil || downloadUrl
+  return downloadUrl || downloadUrlPortatil
+}
+
+async function verificarAtualizacao(versao, downloadUrl, downloadUrlPortatil) {
+  const link = linkParaDownload(downloadUrl, downloadUrlPortatil)
+  if (!versao || !link) return
   const local = app.getVersion()
   if (!temNovaVersao(local, versao)) return
   const resposta = await dialog.showMessageBox(win || winAtivacao, {
     type: 'info',
     title: 'Nova versão disponível',
-    message: `Uma nova versão (${versao}) está disponível.\nSua versão atual é ${local}.`,
+    message: `Uma nova versão (${versao}) está disponível.\nSua versão atual é ${local} — versão ${ehPortatil() ? 'portátil' : 'instalada'}.`,
     buttons: ['Baixar agora', 'Depois'],
     defaultId: 0,
     cancelId: 1
   })
   if (resposta.response === 0) {
-    shell.openExternal(downloadUrl)
+    shell.openExternal(link)
   }
 }
 
@@ -195,9 +207,19 @@ ipcMain.handle('revalidar-licenca', async () => {
 
 async function garantirLicenca() {
   const r = await verificarLicenca()
-  if (r.status === 'ok') return { ok: true, versao: r.versao, downloadUrl: r.downloadUrl, offline: r.offline }
-  mostrarAtivacao(r.status === 'bloqueado' ? 'bloqueado' : 'ativar')
-  return { ok: false }
+  if (r.status !== 'ok') {
+    mostrarAtivacao(r.status === 'bloqueado' ? 'bloqueado' : 'ativar')
+    return { ok: false }
+  }
+  // Offline: não oferece atualização — ninguém baixa sem conexão
+  if (r.offline) return { ok: true, offline: true }
+  const salva = r.licenca || {}
+  return {
+    ok: true,
+    versao: r.versao ?? salva.versao,
+    downloadUrl: r.downloadUrl ?? salva.downloadUrl,
+    downloadUrlPortatil: r.downloadUrlPortatil ?? salva.downloadUrlPortatil
+  }
 }
 
 app.whenReady().then(async () => {
@@ -206,7 +228,7 @@ app.whenReady().then(async () => {
   const lic = await garantirLicenca()
   if (lic.ok) {
     criarJanela()
-    verificarAtualizacao(lic.versao, lic.downloadUrl)
+    verificarAtualizacao(lic.versao, lic.downloadUrl, lic.downloadUrlPortatil)
   }
 
   const template = [
@@ -228,6 +250,34 @@ app.whenReady().then(async () => {
             dialog.showMessageBox(win, {
               type: 'info',
               message: lic ? `Licença ativa\nChave: ${lic.chave}\nÚltima validação: ${new Date(lic.ultimaValidacao).toLocaleDateString('pt-BR')}` : 'Licença não ativada.'
+            })
+          } },
+        { label: 'Verificar atualização...', click: async () => {
+            const r = await forcarRevalidacao()
+            if (r.status === 'bloqueado') { mostrarAtivacao('bloqueado'); return }
+            if (r.status === 'ativar') { mostrarAtivacao('ativar'); return }
+            if (r.offline) {
+              dialog.showMessageBox(win, {
+                type: 'warning',
+                message: 'Sem conexão no momento. Verifique sua internet e tente novamente.'
+              })
+              return
+            }
+            const local = app.getVersion()
+            if (r.versao && temNovaVersao(local, r.versao)) {
+              if (r.downloadUrl || r.downloadUrlPortatil) {
+                await verificarAtualizacao(r.versao, r.downloadUrl, r.downloadUrlPortatil)
+              } else {
+                dialog.showMessageBox(win, {
+                  type: 'warning',
+                  message: `Há uma nova versão (${r.versao}), mas o link de download ainda não está disponível.`
+                })
+              }
+              return
+            }
+            dialog.showMessageBox(win, {
+              type: 'info',
+              message: `Você já está usando a versão mais recente (${local}).`
             })
           } },
         { label: 'Sobre', click: () => dialog.showMessageBox(win, { message: `${NOME}\nVersão ${app.getVersion()}`, type: 'info' }) }

@@ -131,13 +131,15 @@ export async function bloquearChave(chave) {
 export async function buscarConfig() {
   if (!usaBanco) {
     const d = carregarJSON()
-    return d.config || { versao: '1.0.0', downloadUrl: '' }
+    // Defaults primeiro, depois o que esta salvo: garante o shape mesmo num JSON antigo
+    return { versao: '1.0.0', downloadUrl: '', downloadUrlPortatil: '', ...(d.config || {}) }
   }
   const rows = await sql`SELECT * FROM config`
-  const cfg = { versao: '1.0.0', downloadUrl: '' }
+  const cfg = { versao: '1.0.0', downloadUrl: '', downloadUrlPortatil: '' }
   for (const r of rows) {
     if (r.chave === 'versao') cfg.versao = r.valor
     if (r.chave === 'downloadUrl') cfg.downloadUrl = r.valor
+    if (r.chave === 'downloadUrlPortatil') cfg.downloadUrlPortatil = r.valor
   }
   return cfg
 }

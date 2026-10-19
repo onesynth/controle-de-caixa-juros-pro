@@ -52,8 +52,10 @@
     <div class="config-campos">
       <label>Versão atual</label>
       <input id="cfgVersao" placeholder="1.0.0">
-      <label>Link de download (.exe)</label>
+      <label>Link de download — versão instalada (.exe)</label>
       <input id="cfgUrl" placeholder="https://...">
+      <label>Link de download — versão portátil (.exe)</label>
+      <input id="cfgUrlPortatil" placeholder="https://...">
       <button onclick="salvarConfig()">Salvar configuração</button>
     </div>
     <div id="msgConfig" class="msg"></div>
@@ -137,6 +139,7 @@ async function carregarConfig() {
     const cfg = await api('/admin/api/config')
     $('cfgVersao').value = cfg.versao || '1.0.0'
     $('cfgUrl').value = cfg.downloadUrl || ''
+    $('cfgUrlPortatil').value = cfg.downloadUrlPortatil || ''
   } catch {}
 }
 
@@ -144,7 +147,11 @@ async function salvarConfig() {
   try {
     await api('/admin/api/config', {
       method: 'POST',
-      body: JSON.stringify({ versao: $('cfgVersao').value, downloadUrl: $('cfgUrl').value })
+      body: JSON.stringify({
+        versao: $('cfgVersao').value,
+        downloadUrl: $('cfgUrl').value,
+        downloadUrlPortatil: $('cfgUrlPortatil').value
+      })
     })
     const m = $('msgConfig'); m.className='msg ok'; m.textContent='Configuração salva!'
     setTimeout(() => { m.className='msg' }, 2500)

@@ -1,0 +1,34 @@
+name: Sync site de vendas
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'site-vendas/**'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo principal
+        uses: actions/checkout@v4
+
+      - name: Checkout site (branch do GitHub Pages)
+        uses: actions/checkout@v4
+        with:
+          repository: onesynth/site-vendas
+          ref: gh-pages
+          token: ${{ secrets.SITE_TOKEN }}
+          path: site-repo
+
+      - name: Sincronizar arquivos
+        run: rsync -a --exclude='.git' site-vendas/ site-repo/
+
+      - name: Commit e push
+        run: |
+          cd site-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || (git commit -m "Atualiza site de vendas via sync automatico" && git push)

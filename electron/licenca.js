@@ -64,29 +64,42 @@ async function chamar(rota, corpo) {
   throw ultimoErro
 }
 
+// Só sobrescreve a versão/link quando o servidor veio com ele, para não apagar o que já estava salvo
+function copiarAtualizacao(d, destino) {
+  if (d?.versao) destino.versao = d.versao
+  if (d?.downloadUrl) destino.downloadUrl = d.downloadUrl
+  if (d?.downloadUrlPortatil) destino.downloadUrlPortatil = d.downloadUrlPortatil
+}
+
+function infoAtualizacao(origem) {
+  return { versao: origem?.versao, downloadUrl: origem?.downloadUrl, downloadUrlPortatil: origem?.downloadUrlPortatil }
+}
+
 export async function ativar(chave) {
   const d = await chamar('/ativar', { chave: chave.trim(), idMaquina: idMaquina() })
   const lic = { token: d.token, ultimaValidacao: new Date().toISOString(), chave: chave.trim().toUpperCase() }
+  copiarAtualizacao(d, lic)
   salvarLicenca(lic)
-  return { licenca: lic, versao: d.versao, downloadUrl: d.downloadUrl }
+  return { licenca: lic, ...infoAtualizacao(d) }
 }
 
-// Retorna: { status: 'ok' | 'ativar' | 'bloqueado', licenca?, versao?, downloadUrl?, offline? }
-export async function verificarLicenca() {
+// Retorna: { status: 'ok' | 'ativar' | 'bloqueado', licenca?, versao?, downloadUrl?, downloadUrlPortatil?, offline? }
+export async function verificarLicenca({ forcar = false } = {}) {
   const lic = licencaSalva()
   if (!lic) return { status: 'ativar' }
 
   const dias = (Date.now() - new Date(lic.ultimaValidacao).getTime()) / 864e5
 
-  // Dentro do período de revalidação: libera direto
-  if (dias < REVALIDAR_DIAS) return { status: 'ok', licenca: lic }
+  // Dentro do período de revalidação: libera direto com a última versão conhecida
+  if (!forcar && dias < REVALIDAR_DIAS) return { status: 'ok', licenca: lic, ...infoAtualizacao(lic) }
 
   // Tenta revalidar com o servidor
   try {
     const d = await chamar('/validar', { token: lic.token })
     const novo = { ...lic, token: d.token, ultimaValidacao: new Date().toISOString() }
+    copiarAtualizacao(d, novo)
     salvarLicenca(novo)
-    return { status: 'ok', licenca: novo, versao: d.versao, downloadUrl: d.downloadUrl }
+    return { status: 'ok', licenca: novo, ...infoAtualizacao(d) }
   } catch (e) {
     // Recusa do servidor (4xx): não é problema de rede — bloqueia com a mensagem real
     if (e.httpStatus && e.httpStatus >= 400 && e.httpStatus < 500) {
@@ -101,12 +114,17 @@ export async function verificarLicenca() {
   }
 }
 
+// Ignora o intervalo de 7 dias e revalida agora (usado pelo menu "Verificar atualização")
+export function forcarRevalidacao() {
+  return verificarLicenca({ forcar: true })
+}
+
 // Tenta reativar a licença com a chave salva localmente (fallback quando /validar falha)
 export async function reativarComChaveSalva() {
   const lic = licencaSalva()
   if (!lic?.chave) return { erro: 'Chave de licença não encontrada. Ative novamente.' }
   const r = await ativar(lic.chave)
-  return { ok: true, licenca: r.licenca, versao: r.versao, downloadUrl: r.downloadUrl }
+  return { ok: true, licenca: r.licenca, ...infoAtualizacao(r) }
 }
 
 // Verificação silenciosa para uso offline (sem bloquear o app)
