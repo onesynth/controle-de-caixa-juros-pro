@@ -5,7 +5,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import criarRouterContas from './routes/contas.js'
 import criarRouterHistorico from './routes/historico.js'
-import { recalcularCadeia, atualizarTaxaGlobal } from './calculo.js'
+import { recalcularCadeia, atualizarTaxaGlobal, sanitizarDados, hoje } from './calculo.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, '..', 'src', 'data', 'dados.json')
@@ -18,12 +18,16 @@ const CONFIG_PADRAO = () => ({
   diasCalculo: null
 })
 
+const VAZIO = () => ({ contas: [], cofrinhos: [], historico: [], configuracoes: CONFIG_PADRAO() })
+
 export function loadData(file = DATA_FILE) {
-  if (!fs.existsSync(file)) return { contas: [], cofrinhos: [], historico: [], configuracoes: CONFIG_PADRAO() }
+  if (!fs.existsSync(file)) return VAZIO()
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf-8'))
+    const bruto = JSON.parse(fs.readFileSync(file, 'utf-8'))
+    if (!bruto || typeof bruto !== 'object' || Array.isArray(bruto)) return VAZIO()
+    return sanitizarDados({ ...VAZIO(), ...bruto })
   } catch {
-    return { contas: [], cofrinhos: [], historico: [], configuracoes: CONFIG_PADRAO() }
+    return VAZIO()
   }
 }
 
@@ -53,15 +57,13 @@ export function createApp(dataFile = DATA_FILE) {
 
   app.post('/api/atualizar-saldo', (req, res) => {
     const { contaId } = req.body || {}
-    const saldoAtual = Number(req.body?.saldoAtual)
     const entradas = Number(req.body?.entradas) || 0
     const saidas = Number(req.body?.saidas) || 0
+    const brutoSaldo = req.body?.saldoAtual
+    const temSaldo = brutoSaldo !== undefined && brutoSaldo !== null && String(brutoSaldo).trim() !== ''
 
     if (!contaId) return res.status(400).json({ erro: 'Informe a conta' })
-    if (!Number.isFinite(saldoAtual) || saldoAtual < 0) {
-      return res.status(400).json({ erro: 'Saldo atual inválido' })
-    }
-    if (entradas < 0 || saidas < 0) {
+    if (!Number.isFinite(entradas) || !Number.isFinite(saidas) || entradas < 0 || saidas < 0) {
       return res.status(400).json({ erro: 'Entradas e saídas não podem ser negativas' })
     }
 
@@ -69,10 +71,26 @@ export function createApp(dataFile = DATA_FILE) {
     const conta = data.contas.find(c => c.id === contaId)
     if (!conta) return res.status(404).json({ erro: 'Conta não encontrada' })
 
+    let saldoAtual
+    if (temSaldo) {
+      saldoAtual = Number(brutoSaldo)
+      if (!Number.isFinite(saldoAtual) || saldoAtual < 0) {
+        return res.status(400).json({ erro: 'Saldo atual inválido' })
+      }
+    } else {
+      if (entradas === 0 && saidas === 0) {
+        return res.status(400).json({ erro: 'Informe o novo saldo' })
+      }
+      saldoAtual = Math.round(((Number(conta.saldoAtual) || 0) + entradas - saidas) * 100) / 100
+      if (saldoAtual < 0) {
+        return res.status(400).json({ erro: 'Saldo resultante negativo — verifique entradas e saídas' })
+      }
+    }
+
     if (!data.historico) data.historico = []
     const registro = {
       id: novoId(),
-      data: new Date().toISOString().slice(0, 10),
+      data: hoje(),
       contaId,
       saldoAnterior: conta.saldoAtual,
       saldoAtual,

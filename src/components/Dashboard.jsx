@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Wallet, PiggyBank, TrendingUp, RefreshCw, ArrowDownLeft, ArrowUpRight, Clock, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api, fmtBRL, fmtPct, calcularSaldoDisponivel } from '../api.js'
+import { ordenarRegistros } from '../../server/calculo.js'
 
 function parseValor(texto) {
   const bruto = String(texto ?? '').trim()
@@ -33,17 +34,18 @@ export default function Dashboard({ dados, onChange }) {
   const historico = dados.historico || []
   const config = dados.configuracoes || {}
 
-  const historicoFiltrado = useMemo(() =>
-    historico.filter(h => contas.some(c => c.id === h.contaId)),
-    [historico, contas]
-  )
-
   const [contaSelecionada, setContaSelecionada] = useState(contas[0]?.id || '')
   const [novoSaldo, setNovoSaldo] = useState('')
   const [entradas, setEntradas] = useState('')
   const [saidas, setSaidas] = useState('')
 
   const conta = contas.find(c => c.id === contaSelecionada)
+
+  const historicoFiltrado = useMemo(() => {
+    const validos = historico.filter(h => contas.some(c => c.id === h.contaId))
+    const escopo = contaSelecionada ? validos.filter(h => h.contaId === contaSelecionada) : validos
+    return ordenarRegistros(escopo)
+  }, [historico, contas, contaSelecionada])
 
   const totalCofrinhos = useMemo(() =>
     cofrinhos.reduce((s, c) => s + Number(c.valor), 0),
@@ -65,6 +67,60 @@ export default function Dashboard({ dados, onChange }) {
     [historicoFiltrado]
   )
 
+  const resumoTaxa = useMemo(() => {
+    if (historicoFiltrado.length > 0) {
+      let fonte = null
+      for (let i = historicoFiltrado.length - 1; i >= 0; i--) {
+        if (historicoFiltrado[i].taxaEfetivaAnual !== null && historicoFiltrado[i].taxaEfetivaAnual !== undefined) {
+          fonte = historicoFiltrado[i]
+          break
+        }
+      }
+      const ultimo = historicoFiltrado[historicoFiltrado.length - 1]
+      return {
+        taxaDiaria: fonte?.taxaEfetivaDiaria ?? null,
+        taxaAnual: fonte?.taxaEfetivaAnual ?? null,
+        data: fonte?.data ?? ultimo?.data ?? null,
+        dias: fonte?.diasCalculo ?? ultimo?.diasCalculo ?? null,
+        semDados: false
+      }
+    }
+    if (contaSelecionada) {
+      return { taxaDiaria: null, taxaAnual: null, data: null, dias: null, semDados: true }
+    }
+    return {
+      taxaDiaria: config.taxaEfetivaDiaria ?? null,
+      taxaAnual: config.taxaEfetivaAnual ?? null,
+      data: config.dataCalculo ?? null,
+      dias: config.diasCalculo ?? null,
+      semDados: !config.dataCalculo
+    }
+  }, [historicoFiltrado, contaSelecionada, config])
+
+  const previa = useMemo(() => {
+    if (!conta) return null
+    const e = parseValor(entradas)
+    const s = parseValor(saidas)
+    if (!Number.isFinite(e) || !Number.isFinite(s) || e < 0 || s < 0) return null
+    const base = Number(conta.saldoAtual) || 0
+    const temSaldo = String(novoSaldo).trim() !== ''
+    let valorFinal = null
+    let automatico = false
+    if (temSaldo) {
+      const v = parseValor(novoSaldo)
+      if (!Number.isFinite(v) || v < 0) return null
+      valorFinal = v
+    } else if (e > 0 || s > 0) {
+      valorFinal = Math.round((base + e - s) * 100) / 100
+      automatico = true
+      if (valorFinal < 0) return null
+    } else {
+      return null
+    }
+    const juros = Math.round((valorFinal - base - e + s) * 100) / 100
+    return { valorFinal, juros, automatico }
+  }, [conta, novoSaldo, entradas, saidas])
+
   const cofrinhosProximos = useMemo(() => {
     return cofrinhos
       .filter(c => {
@@ -85,17 +141,33 @@ export default function Dashboard({ dados, onChange }) {
       toast.error('Selecione uma conta')
       return
     }
-    const valor = parseValor(novoSaldo)
     const e = parseValor(entradas)
     const s = parseValor(saidas)
-    if (!Number.isFinite(valor) || valor < 0) {
-      toast.error('Digite um valor válido')
-      return
-    }
     if (!Number.isFinite(e) || !Number.isFinite(s) || e < 0 || s < 0) {
-      toast.error('Entradas e saídas não podem ser negativas')
+      toast.error('Entradas e saídas inválidas')
       return
     }
+
+    const temSaldo = String(novoSaldo).trim() !== ''
+    let valor
+    if (temSaldo) {
+      valor = parseValor(novoSaldo)
+      if (!Number.isFinite(valor) || valor < 0) {
+        toast.error('Digite um valor válido')
+        return
+      }
+    } else if (e > 0 || s > 0) {
+      const base = Number(conta?.saldoAtual) || 0
+      valor = Math.round((base + e - s) * 100) / 100
+      if (valor < 0) {
+        toast.error('Saldo resultante negativo — verifique entradas e saídas')
+        return
+      }
+    } else {
+      toast.error('Digite o novo saldo')
+      return
+    }
+
     try {
       await api.atualizarSaldo({ contaId: contaSelecionada, saldoAtual: valor, entradas: e, saidas: s })
       setNovoSaldo('')
@@ -126,14 +198,14 @@ export default function Dashboard({ dados, onChange }) {
           <div className="card-valor">{fmtBRL(jurosHoje)}</div>
           <div className="card-sub">Acumulado: {fmtBRL(jurosAcumulado)}</div>
           <div className="card-sub" style={{ marginTop: 4 }}>
-            Efetiva: {fmtPct(config.taxaEfetivaDiaria, 4)} ao dia · {fmtPct(config.taxaEfetivaAnual, 2)} ao ano
+            Efetiva: {fmtPct(resumoTaxa.taxaDiaria, 4)} ao dia · {fmtPct(resumoTaxa.taxaAnual, 2)} ao ano
           </div>
           <div className="card-sub" style={{ fontSize: 11 }}>
-            {config.dataCalculo
-              ? config.diasCalculo > 0
-                ? `Calculado em ${config.dataCalculo} · ${config.diasCalculo} dia(s) corrido(s)`
-                : `Última atualização em ${config.dataCalculo} — mesmo dia, sem taxa`
-              : 'Atualize o saldo para calcular a taxa efetiva'}
+            {!resumoTaxa.data
+              ? 'Atualize o saldo para calcular a taxa efetiva'
+              : resumoTaxa.dias > 0
+                ? `Calculado em ${resumoTaxa.data} · ${resumoTaxa.dias} dia(s) corrido(s)`
+                : `Última atualização em ${resumoTaxa.data} — sem taxa neste período`}
           </div>
         </div>
       </div>
@@ -170,6 +242,7 @@ export default function Dashboard({ dados, onChange }) {
         <input
           type="text"
           placeholder="Novo saldo (ex: 10.000,00)"
+          title="Deixe em branco para o app calcular: saldo atual + entradas − saídas"
           value={novoSaldo}
           onChange={e => setNovoSaldo(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAtualizar()}
@@ -196,6 +269,21 @@ export default function Dashboard({ dados, onChange }) {
           <RefreshCw size={16} /> Atualizar
         </button>
       </div>
+
+      {previa && (
+        <div className="previa-atualizacao">
+          <span>Novo saldo: <strong>{fmtBRL(previa.valorFinal)}</strong></span>
+          <span>
+            Juros:{' '}
+            <strong className={previa.juros >= 0 ? 'positivo' : 'negativo'}>
+              {previa.juros >= 0 ? '+' : ''}{fmtBRL(previa.juros)}
+            </strong>
+          </span>
+          {previa.automatico && (
+            <span className="previa-aviso">calculado automaticamente: saldo atual + entradas − saídas</span>
+          )}
+        </div>
+      )}
 
       {historicoFiltrado.length > 0 && (
         <div className="historico-section">

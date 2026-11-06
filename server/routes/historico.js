@@ -31,6 +31,9 @@ export function criarRouterHistorico(dataFile) {
     }
 
     if (corpo.saldoAtual !== undefined) {
+      if (corpo.saldoAtual === null || String(corpo.saldoAtual).trim() === '') {
+        return res.status(400).json({ erro: 'Saldo atual inválido' })
+      }
       const saldo = Number(corpo.saldoAtual)
       if (!Number.isFinite(saldo) || saldo < 0) {
         return res.status(400).json({ erro: 'Saldo atual inválido' })

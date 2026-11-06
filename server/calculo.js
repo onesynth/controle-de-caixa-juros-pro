@@ -35,7 +35,12 @@ export function calcularTaxas({
   }
 }
 
-function ordenarRegistros(registros) {
+export function hoje() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function ordenarRegistros(registros) {
   return registros
     .map((registro, indice) => ({ registro, indice }))
     .sort((a, b) => {
@@ -58,7 +63,22 @@ export function recalcularCadeia(data, contaId) {
   const registros = registrosDaConta(data, contaId)
   const primeiro = registros[0]
 
-  let saldoCorrente = conta.saldoBase ?? primeiro?.saldoAnterior ?? conta.saldoAtual ?? 0
+  if (!primeiro) {
+    const saldo = Number(conta.saldoAtual)
+    if (Number.isFinite(saldo) && saldo > 0) {
+      conta.saldoBase = saldo
+      if (!conta.dataBase) conta.dataBase = conta.dataAtualizacao || hoje()
+    } else {
+      conta.saldoAtual = Number(conta.saldoBase) || 0
+    }
+    return conta
+  }
+
+  let saldoCorrente = Number(conta.saldoBase) || 0
+  if (!(saldoCorrente > 0)) {
+    saldoCorrente = Number(primeiro.saldoAnterior) || Number(conta.saldoAtual) || 0
+    if (saldoCorrente > 0) conta.saldoBase = saldoCorrente
+  }
   let dataCorrente =
     conta.dataBase ??
     (primeiro && conta.dataAtualizacao && conta.dataAtualizacao < primeiro.data
@@ -91,16 +111,45 @@ export function recalcularCadeia(data, contaId) {
 }
 
 export function atualizarTaxaGlobal(data) {
-  const todos = ordenarRegistros(data.historico || [])
+  const ids = new Set((data.contas || []).map(c => c.id))
+  const todos = ordenarRegistros((data.historico || []).filter(h => ids.has(h.contaId)))
   const ultimo = todos[todos.length - 1] || null
+  let fonte = null
+  for (let i = todos.length - 1; i >= 0; i--) {
+    if (todos[i].taxaEfetivaAnual !== null && todos[i].taxaEfetivaAnual !== undefined) {
+      fonte = todos[i]
+      break
+    }
+  }
 
   const config = { ...(data.configuracoes || {}) }
-  config.taxaEfetivaAnual = ultimo?.taxaEfetivaAnual ?? null
-  config.taxaEfetivaDiaria = ultimo?.taxaEfetivaDiaria ?? null
-  config.dataCalculo = ultimo?.data ?? null
-  config.diasCalculo = ultimo?.diasCalculo ?? null
+  config.taxaEfetivaAnual = fonte?.taxaEfetivaAnual ?? null
+  config.taxaEfetivaDiaria = fonte?.taxaEfetivaDiaria ?? null
+  config.dataCalculo = fonte?.data ?? ultimo?.data ?? null
+  config.diasCalculo = fonte?.diasCalculo ?? ultimo?.diasCalculo ?? null
   data.configuracoes = config
   return config
+}
+
+export function sanitizarDados(data) {
+  if (!data || typeof data !== 'object') return data
+
+  const contas = Array.isArray(data.contas) ? data.contas : []
+  const ids = new Set(contas.map(c => c.id))
+  data.contas = contas
+  data.cofrinhos = (Array.isArray(data.cofrinhos) ? data.cofrinhos : [])
+    .filter(c => c.contaId == null || ids.has(c.contaId))
+  data.historico = (Array.isArray(data.historico) ? data.historico : []).filter(h => ids.has(h.contaId))
+
+  for (const h of data.historico) {
+    h.saldoAtual = Number(h.saldoAtual) || 0
+    h.entradas = Number(h.entradas) || 0
+    h.saidas = Number(h.saidas) || 0
+  }
+
+  for (const conta of contas) recalcularCadeia(data, conta.id)
+  atualizarTaxaGlobal(data)
+  return data
 }
 
 export function taxaDoMes(registros) {

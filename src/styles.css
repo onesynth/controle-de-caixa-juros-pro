@@ -160,6 +160,19 @@ button { font-family: inherit; }
 }
 .btn-atualizar:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(16, 185, 129, .45); }
 
+.previa-atualizacao {
+  background: var(--superficie); border-radius: 16px; padding: 12px 24px;
+  box-shadow: var(--sombra); margin: -16px 0 24px;
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  font-size: 14px; color: var(--texto-fraco);
+  border-left: 4px solid var(--roxo);
+  animation: surgir .3s ease both;
+}
+.previa-atualizacao strong { color: var(--texto); font-size: 15px; }
+.previa-atualizacao strong.positivo { color: var(--verde); }
+.previa-atualizacao strong.negativo { color: var(--vermelho); }
+.previa-atualizacao .previa-aviso { font-size: 12px; color: var(--texto-fraco); font-style: italic; }
+
 /* ============ HISTÓRICO DE JUROS ============ */
 .historico-section {
   background: var(--superficie); border-radius: 16px; padding: 20px 24px;

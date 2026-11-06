@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { FileText, Download, ChevronLeft, ChevronRight, TrendingUp, Calendar, Award } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { api, fmtBRL, fmtPct } from '../api.js'
+import { fmtBRL, fmtPct } from '../api.js'
+import { taxaDoMes } from '../../server/calculo.js'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -43,6 +44,7 @@ export default function Relatorio({ dados }) {
         nome: MESES[i].slice(0, 3),
         nomeCompleto: MESES[i],
         total,
+        taxa: taxaDoMes(registros),
         registros: registros.length,
         positivo: total >= 0
       })
@@ -62,7 +64,7 @@ export default function Relatorio({ dados }) {
   const exportarCSV = () => {
     const linhas = ['Mês,Juros,Taxa,Registros']
     dadosMensais.forEach(m => {
-      const taxa = m.taxa === null ? '' : m.taxa.toFixed(4)
+      const taxa = m.taxa == null ? '' : Number(m.taxa).toFixed(4)
       linhas.push(`${m.nomeCompleto},${m.total.toFixed(2)},${taxa},${m.registros}`)
     })
     linhas.push('')
@@ -76,7 +78,6 @@ export default function Relatorio({ dados }) {
     link.download = `relatorio-juros-${anoSelecionado}.csv`
     link.click()
     URL.revokeObjectURL(link.href)
-    api.dados && api.dados()
   }
 
   const exportarPDF = () => {

@@ -126,7 +126,12 @@ export default function Historico({ dados, onChange }) {
       toast.error('Informe uma data válida')
       return
     }
-    const saldoAtual = parseValor(formRegistro.saldoAtual)
+    const saldoBruto = String(formRegistro.saldoAtual ?? '').trim()
+    if (saldoBruto === '') {
+      toast.error('Digite o saldo atual do lançamento')
+      return
+    }
+    const saldoAtual = parseValor(saldoBruto)
     if (!Number.isFinite(saldoAtual)) {
       toast.error('Digite um saldo válido')
       return

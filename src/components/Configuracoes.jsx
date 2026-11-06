@@ -4,6 +4,18 @@ import toast from 'react-hot-toast'
 import { api, fmtBRL, fmtPct } from '../api.js'
 import ConfirmDialog from './ConfirmDialog.jsx'
 
+function hojeLocal() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function parseValor(texto) {
+  const bruto = String(texto ?? '').trim()
+  if (bruto === '') return 0
+  const n = parseFloat(bruto.replace(/[^\d.,]/g, '').replace(',', '.'))
+  return Number.isFinite(n) ? n : NaN
+}
+
 export default function Configuracoes({ dados, onChange }) {
   const contas = dados.contas || []
   const config = dados.configuracoes || {}
@@ -14,7 +26,7 @@ export default function Configuracoes({ dados, onChange }) {
   const [confirmar, setConfirmar] = useState(null)
 
   const abrirNovaConta = () => {
-    setFormConta({ nome: '' })
+    setFormConta({ nome: '', saldoInicial: '', dataInicial: hojeLocal() })
     setEditandoConta(null)
     setModalConta(true)
   }
@@ -37,6 +49,22 @@ export default function Configuracoes({ dados, onChange }) {
       return
     }
     const payload = { nome: formConta.nome.trim() }
+
+    if (!editandoConta) {
+      const saldoInicial = parseValor(formConta.saldoInicial)
+      if (!Number.isFinite(saldoInicial) || saldoInicial < 0) {
+        toast.error('Saldo inicial inválido')
+        return
+      }
+      const dataBase = String(formConta.dataInicial || '').trim() || hojeLocal()
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dataBase) || Number.isNaN(Date.parse(`${dataBase}T00:00:00Z`))) {
+        toast.error('Data inicial inválida')
+        return
+      }
+      payload.saldoInicial = saldoInicial
+      payload.dataBase = dataBase
+    }
+
     try {
       if (editandoConta) {
         await api.editConta(editandoConta.id, payload)
@@ -138,9 +166,32 @@ export default function Configuracoes({ dados, onChange }) {
                 onChange={e => setFormConta({ ...formConta, nome: e.target.value })}
               />
             </div>
+            {!editandoConta && (
+              <>
+                <div className="form-campo">
+                  <label>Saldo Inicial</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: 4.157,00"
+                    title="Quanto tem nesta conta hoje. Esse valor vira o ponto de partida dos cálculos."
+                    value={formConta.saldoInicial ?? ''}
+                    onChange={e => setFormConta({ ...formConta, saldoInicial: e.target.value })}
+                  />
+                </div>
+                <div className="form-campo">
+                  <label>Data Inicial</label>
+                  <input
+                    type="date"
+                    value={formConta.dataInicial ?? ''}
+                    onChange={e => setFormConta({ ...formConta, dataInicial: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
             <p style={{ fontSize: 12, color: 'var(--texto-fraco)', marginTop: 4 }}>
-              O saldo é alterado apenas pelo Dashboard, para que os lançamentos e as taxas
-              permaneçam consistentes.
+              {editandoConta
+                ? 'O saldo é alterado apenas pelo Dashboard, para que os lançamentos e as taxas permaneçam consistentes.'
+                : 'O saldo inicial define por onde a cadeia de cálculo começa — assim o primeiro lançamento não é confundido com juros. Depois disso, o saldo só muda pelo Dashboard.'}
             </p>
             <div className="form-botoes">
               <button className="btn-cancelar" onClick={fecharConta}>Cancelar</button>
